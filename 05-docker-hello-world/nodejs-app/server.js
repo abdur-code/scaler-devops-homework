@@ -1,0 +1,37 @@
+const http = require('http');
+
+const PORT = process.env.PORT || 3000;
+
+const page = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hello World - Node.js</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+             background: #0f172a; color: #e2e8f0;
+             font-family: system-ui, -apple-system, sans-serif; }
+      .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px;
+              padding: 2.5rem 3.5rem; text-align: center; }
+      h1 { margin: 0 0 0.6rem; font-size: 2.6rem; }
+      p { margin: 0; color: #94a3b8; font-family: ui-monospace, monospace; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Hello World</h1>
+      <p>nodejs-app &middot; node:22-alpine</p>
+    </div>
+  </body>
+</html>`;
+
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(page);
+});
+
+// 0.0.0.0 and not 127.0.0.1, otherwise -p cannot reach it from the host
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`nodejs-app listening on port ${PORT}`);
+});
