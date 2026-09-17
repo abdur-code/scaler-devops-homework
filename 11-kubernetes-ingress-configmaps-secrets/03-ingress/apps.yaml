@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yatri-frontend-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html><body><h1>Yatri Frontend</h1>
+    <p>Served by yatri-frontend-service on path /</p></body></html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-frontend
+  labels:
+    app: yatri-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yatri-frontend
+  template:
+    metadata:
+      labels:
+        app: yatri-frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap:
+            name: yatri-frontend-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yatri-frontend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: yatri-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yatri-backend-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html><body><h1>Yatri Backend API</h1>
+    <p>Served by yatri-backend-service on path /api</p></body></html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: yatri-app-config
+            - secretRef:
+                name: yatri-db-secret
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap:
+            name: yatri-backend-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yatri-backend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: yatri-backend
+  ports:
+    - port: 80
+      targetPort: 80

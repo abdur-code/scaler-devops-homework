@@ -20,10 +20,20 @@ is copied from notes.
 | 5 | [Docker: Hello World](05-docker-hello-world/) | six containerised apps — Node, Python, Java, Apache, nginx, React |
 | 6 | [Docker Multi-Stage](06-docker-multistage/) | multi-stage build on port 8080, size comparison, three app types |
 | 7 | [Docker Networking & Volumes](07-docker-network-volume/) | custom networks, host network, bind mounts, overlay |
+| 8 | [Kubernetes Fundamentals](08-kubernetes-fundamentals/) | minikube cluster, control plane vs node components |
+| 9 | [Pods, ReplicaSets, Deployments](09-kubernetes-pods-replicasets-deployments/) | self-healing, scaling, rolling update, `rollout undo` |
+| 10 | [Kubernetes Networking & Services](10-kubernetes-networking-services/) | ClusterIP, NodePort, LoadBalancer, ExternalName, headless |
+| 11 | [Ingress, ConfigMaps & Secrets](11-kubernetes-ingress-configmaps-secrets/) | config injection, base64 secrets, path-based routing |
 
 ## Environment
 
-Everything was run on macOS (Apple Silicon) with Docker Desktop.
+Everything was run on macOS (Apple Silicon) with Docker Desktop. The Kubernetes
+sections use a single-node minikube cluster (v1.39.0, Kubernetes v1.37.0) on the
+`docker` driver.
+
+Because the minikube node sits on an internal Docker network that macOS cannot route
+to, the reachability checks in sections 10 and 11 go through `kubectl port-forward`
+rather than the node IP. That is called out in each section rather than glossed over.
 
 Because `ip`, `ss`, `journalctl`, `adduser` and friends are Linux-only, the Linux and
 networking tasks were done inside containers rather than faked:
