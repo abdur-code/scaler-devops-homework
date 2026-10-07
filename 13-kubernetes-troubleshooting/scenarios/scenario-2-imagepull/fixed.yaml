@@ -1,0 +1,16 @@
+# Fix: "yatri-api-service:v999-invalid-tag-does-not-exist" has no registry prefix, so it
+# means docker.io/library/yatri-api-service, which does not exist on Docker Hub (and no
+# private registry or imagePullSecret is configured). There is no real image to point at,
+# so for the lab I use a known-good public image as a stand-in. In a real incident the fix
+# is the correct <registry>/<repo>:<tag> from the team, plus an imagePullSecret if private.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-2-imagepull-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: imagepull
+spec:
+  containers:
+    - name: web-app
+      image: nginx:1.27

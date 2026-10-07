@@ -1,0 +1,12 @@
+# Addition: section 6 of the notes shows .Chart.* in a snippet only.
+# This tiny ConfigMap renders those fields so the difference between
+# version and appVersion is visible in "helm template".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-chart-info
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    app-version: "{{ .Chart.AppVersion }}"
+data:
+  description: {{ .Chart.Description | quote }}

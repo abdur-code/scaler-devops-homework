@@ -1,0 +1,12 @@
+# The missing piece for mount-demo: once this ConfigMap exists, the kubelet's next mount
+# retry succeeds and the container starts. No change to the Pod is needed.
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: site-config
+
+data:
+  site.conf: |
+    environment=lab
+    owner=24BCS10244

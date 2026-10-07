@@ -1,0 +1,109 @@
+time="2026-10-07T22:55:17+05:30" level=info msg="Using docker host 'unix:///var/run/docker.sock', and daemon socket 'unix:///var/run/docker.sock'"
+level=warning msg= ⚠ You are using Apple M-series chip and you have not specified container architecture, you might encounter issues while running act. If so, try running it with '--container-architecture linux/amd64'. ⚠ 
+
+time="2026-10-07T22:55:17+05:30" level=info msg="Start server on http://100.128.162.25:18160"
+[Build and Test Pipeline/Build and Test] ⭐ Run Set up job
+[Build and Test Pipeline/Build and Test] 🚀  Start image=catthehacker/ubuntu:act-latest
+[Build and Test Pipeline/Build and Test]   🐳  docker pull image=catthehacker/ubuntu:act-latest platform= username= forcePull=false
+[Build and Test Pipeline/Build and Test]   🐳  docker create image=catthehacker/ubuntu:act-latest platform= entrypoint=["tail" "-f" "/dev/null"] cmd=[] network="host"
+[Build and Test Pipeline/Build and Test]   🐳  docker run image=catthehacker/ubuntu:act-latest platform= entrypoint=["tail" "-f" "/dev/null"] cmd=[] network="host"
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[node --no-warnings -e console.log(process.execPath)] user= workdir=
+[Build and Test Pipeline/Build and Test]   ✅  Success - Set up job
+[Build and Test Pipeline/Build and Test]   ☁  git clone 'https://github.com/actions/setup-python' # ref=v7
+[Build and Test Pipeline/Build and Test]   ☁  git clone 'https://github.com/actions/upload-artifact' # ref=v4
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Checkout source code
+[Build and Test Pipeline/Build and Test]   🐳  docker cp src=/Users/abdurrahman/Desktop/SST/scaler-devops-homework/15-github-actions/04-build-and-test/. dst=/Users/abdurrahman/Desktop/SST/scaler-devops-homework/15-github-actions/04-build-and-test
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Checkout source code [56.96025ms]
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Setup Python
+[Build and Test Pipeline/Build and Test]   🐳  docker cp src=/Users/abdurrahman/.cache/act/actions-setup-python@v7/ dst=/var/run/act/actions/actions-setup-python@v7/
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-setup-python@v7/dist/setup/index.js] user= workdir=
+[Build and Test Pipeline/Build and Test]   ❓  ::group::Installed versions
+[Build and Test Pipeline/Build and Test]   | Successfully set up CPython (3.12.15)
+[Build and Test Pipeline/Build and Test]   ❓  ::endgroup::
+[Build and Test Pipeline/Build and Test]   ❓ add-matcher /run/act/actions/actions-setup-python@v7/.github/python.json
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Setup Python [1.00701475s]
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-env:: LD_LIBRARY_PATH=/opt/hostedtoolcache/Python/3.12.15/arm64/lib
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-env:: pythonLocation=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-env:: PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/3.12.15/arm64/lib/pkgconfig
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-env:: Python_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-env:: Python2_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-env:: Python3_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-output:: python-version=3.12.15
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-output:: python-path=/opt/hostedtoolcache/Python/3.12.15/arm64/bin/python
+[Build and Test Pipeline/Build and Test]   ⚙  ::add-path:: /opt/hostedtoolcache/Python/3.12.15/arm64
+[Build and Test Pipeline/Build and Test]   ⚙  ::add-path:: /opt/hostedtoolcache/Python/3.12.15/arm64/bin
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Show Python version
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/2] user= workdir=
+[Build and Test Pipeline/Build and Test]   | Python 3.12.15
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Show Python version [59.872125ms]
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Install dependencies
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/3] user= workdir=
+[Build and Test Pipeline/Build and Test]   | Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (26.2.1)
+[Build and Test Pipeline/Build and Test]   | WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[Build and Test Pipeline/Build and Test]   | Requirement already satisfied: pytest in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from -r requirements.txt (line 1)) (9.1.1)
+[Build and Test Pipeline/Build and Test]   | Requirement already satisfied: iniconfig>=1.0.1 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (2.3.1)
+[Build and Test Pipeline/Build and Test]   | Requirement already satisfied: packaging>=22 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (26.3)
+[Build and Test Pipeline/Build and Test]   | Requirement already satisfied: pluggy<2,>=1.5 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (1.6.0)
+[Build and Test Pipeline/Build and Test]   | Requirement already satisfied: pygments>=2.7.2 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (2.21.0)
+[Build and Test Pipeline/Build and Test]   | WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Install dependencies [723.95ms]
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Run tests
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/4] user= workdir=
+[Build and Test Pipeline/Build and Test]   | ============================= test session starts ==============================
+[Build and Test Pipeline/Build and Test]   | platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.12.15/arm64/bin/python
+[Build and Test Pipeline/Build and Test]   | cachedir: .pytest_cache
+[Build and Test Pipeline/Build and Test]   | rootdir: /Users/abdurrahman/Desktop/SST/scaler-devops-homework/15-github-actions/04-build-and-test
+[Build and Test Pipeline/Build and Test]   | collecting ... collected 5 items
+[Build and Test Pipeline/Build and Test]   | 
+[Build and Test Pipeline/Build and Test]   | tests/test_calculator.py::test_add PASSED                                [ 20%]
+[Build and Test Pipeline/Build and Test]   | tests/test_calculator.py::test_subtract PASSED                           [ 40%]
+[Build and Test Pipeline/Build and Test]   | tests/test_calculator.py::test_multiply PASSED                           [ 60%]
+[Build and Test Pipeline/Build and Test]   | tests/test_calculator.py::test_divide PASSED                             [ 80%]
+[Build and Test Pipeline/Build and Test]   | tests/test_calculator.py::test_divide_by_zero PASSED                     [100%]
+[Build and Test Pipeline/Build and Test]   | 
+[Build and Test Pipeline/Build and Test]   | ============================== 5 passed in 0.01s ===============================
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Run tests [126.133459ms]
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Build application
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/5] user= workdir=
+[Build and Test Pipeline/Build and Test]   | Starting build...
+[Build and Test Pipeline/Build and Test]   | Build completed successfully.
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Build application [49.524625ms]
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Show build output
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/6] user= workdir=
+[Build and Test Pipeline/Build and Test]   | total 16
+[Build and Test Pipeline/Build and Test]   | drwxr-xr-x 2 root root 4096 Oct  7 17:25 .
+[Build and Test Pipeline/Build and Test]   | drwxr-xr-x 9 root root 4096 Oct  7 17:25 ..
+[Build and Test Pipeline/Build and Test]   | -rw-r--r-- 1 root root   98 Oct  7 17:25 build-info.txt
+[Build and Test Pipeline/Build and Test]   | -rw-r--r-- 1 root root 1488 Oct  7 17:25 calculator.py
+[Build and Test Pipeline/Build and Test]   | Application: Session 16 Calculator
+[Build and Test Pipeline/Build and Test]   | Build Status: SUCCESS
+[Build and Test Pipeline/Build and Test]   | Build Date: Wed Oct  7 17:25:22 UTC 2026
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Show build output [45.491667ms]
+[Build and Test Pipeline/Build and Test] ⭐ Run Main Upload artifact
+[Build and Test Pipeline/Build and Test]   🐳  docker cp src=/Users/abdurrahman/.cache/act/actions-upload-artifact@v4/ dst=/var/run/act/actions/actions-upload-artifact@v4/
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-upload-artifact@v4/dist/upload/index.js] user= workdir=
+[Build and Test Pipeline/Build and Test]   | (node:117) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+[Build and Test Pipeline/Build and Test]   | (Use `node --trace-deprecation ...` to show where the warning was created)
+[Build and Test Pipeline/Build and Test]   | With the provided path, there will be 2 files uploaded
+[Build and Test Pipeline/Build and Test]   | Artifact name is valid!
+[Build and Test Pipeline/Build and Test]   | Root directory input is valid!
+[Build and Test Pipeline/Build and Test]   | Beginning upload of artifact content to blob storage
+[Build and Test Pipeline/Build and Test]   | (node:117) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+[Build and Test Pipeline/Build and Test]   | Uploaded bytes 902
+[Build and Test Pipeline/Build and Test]   | Finished uploading artifact content to blob storage!
+[Build and Test Pipeline/Build and Test]   | SHA256 digest of uploaded artifact zip is 53a852a241da98b679358c894467844fba2f11f92fc33d2e8baee091beff6792
+[Build and Test Pipeline/Build and Test]   | Finalizing artifact upload
+[Build and Test Pipeline/Build and Test]   | Artifact calculator-build.zip successfully finalized. Artifact ID 1242866976
+[Build and Test Pipeline/Build and Test]   | Artifact calculator-build has been successfully uploaded! Final size is 902 bytes. Artifact ID is 1242866976
+[Build and Test Pipeline/Build and Test]   | Artifact download URL: https://github.com/git@github-personal:abdur-code/scaler-devops-homework.git/actions/runs/1/artifacts/1242866976
+[Build and Test Pipeline/Build and Test]   ✅  Success - Main Upload artifact [648.592375ms]
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-output:: artifact-id=1242866976
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-output:: artifact-digest=53a852a241da98b679358c894467844fba2f11f92fc33d2e8baee091beff6792
+[Build and Test Pipeline/Build and Test]   ⚙  ::set-output:: artifact-url=https://github.com/git@github-personal:abdur-code/scaler-devops-homework.git/actions/runs/1/artifacts/1242866976
+[Build and Test Pipeline/Build and Test] ⭐ Run Post Setup Python
+[Build and Test Pipeline/Build and Test]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-setup-python@v7/dist/cache-save/index.js] user= workdir=
+[Build and Test Pipeline/Build and Test]   ✅  Success - Post Setup Python [92.192875ms]
+[Build and Test Pipeline/Build and Test] ⭐ Run Complete job
+[Build and Test Pipeline/Build and Test] Cleaning up container for job Build and Test
+[Build and Test Pipeline/Build and Test]   ✅  Success - Complete job
+[Build and Test Pipeline/Build and Test] 🏁  Job succeeded

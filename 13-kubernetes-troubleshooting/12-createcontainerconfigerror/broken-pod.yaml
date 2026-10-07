@@ -1,0 +1,25 @@
+# Addition (not in the lecture): the Pod reads env vars from app-settings, but asks for
+# the key "db_host", which does not exist in the ConfigMap (the real key is database_host).
+# The kubelet cannot build the container's environment -> CreateContainerConfigError.
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: config-demo
+
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo DB_HOST=$DB_HOST LOG_LEVEL=$LOG_LEVEL; sleep 3600"]
+      env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-settings
+              key: db_host
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-settings
+              key: log_level

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session17-python
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: session17-python
+  template:
+    metadata:
+      labels:
+        app: session17-python
+    spec:
+      containers:
+        - name: session17-python
+          # Fix: the lecture file had `nensiravaliya28/hey-cicd:__IMAGE_TAG__` with
+          # `imagePullPolicy: Always`. __IMAGE_TAG__ is only replaced by sed inside the
+          # instructor's CI, and that repository is the instructor's Docker Hub, so on
+          # minikube both pods sat in ImagePullBackOff ("not found"). This is a locally
+          # built image loaded with `minikube image load`; IfNotPresent lets the kubelet
+          # use it instead of trying Docker Hub. The CI workflow swaps in the GHCR image.
+          image: hey-cicd:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
+          # Added: probes from the lecture's 03-kubernetes-deployment notes,
+          # with the port changed from 5000 to 5001 (the port this app listens on).
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          # Added: the image runs as UID 10001, so the cluster can enforce it.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi

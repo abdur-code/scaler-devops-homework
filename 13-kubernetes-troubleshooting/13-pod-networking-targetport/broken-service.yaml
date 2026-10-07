@@ -1,0 +1,18 @@
+# Addition (not in the lecture): the selector is correct, so the Service HAS endpoints,
+# but targetPort is 8080 while nginx listens on 80. Traffic reaches the Pod IP on a port
+# nothing is listening on -> "Connection refused".
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: net-demo-svc
+
+spec:
+  selector:
+    app: net-demo
+
+  ports:
+    - port: 80
+      targetPort: 8080
+
+  type: ClusterIP

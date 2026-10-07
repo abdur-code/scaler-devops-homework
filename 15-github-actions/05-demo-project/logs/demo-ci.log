@@ -1,0 +1,146 @@
+time="2026-10-07T22:57:56+05:30" level=info msg="Using docker host 'unix:///var/run/docker.sock', and daemon socket 'unix:///var/run/docker.sock'"
+level=warning msg= ⚠ You are using Apple M-series chip and you have not specified container architecture, you might encounter issues while running act. If so, try running it with '--container-architecture linux/amd64'. ⚠ 
+
+time="2026-10-07T22:57:56+05:30" level=info msg="Start server on http://100.128.162.25:18160"
+[Python CI Pipeline/Test Application] ⭐ Run Set up job
+[Python CI Pipeline/Test Application] 🚀  Start image=catthehacker/ubuntu:act-latest
+[Python CI Pipeline/Test Application]   🐳  docker pull image=catthehacker/ubuntu:act-latest platform= username= forcePull=false
+[Python CI Pipeline/Test Application]   🐳  docker create image=catthehacker/ubuntu:act-latest platform= entrypoint=["tail" "-f" "/dev/null"] cmd=[] network="host"
+[Python CI Pipeline/Test Application]   🐳  docker run image=catthehacker/ubuntu:act-latest platform= entrypoint=["tail" "-f" "/dev/null"] cmd=[] network="host"
+[Python CI Pipeline/Test Application]   🐳  docker exec cmd=[node --no-warnings -e console.log(process.execPath)] user= workdir=
+[Python CI Pipeline/Test Application]   ✅  Success - Set up job
+[Python CI Pipeline/Test Application]   ☁  git clone 'https://github.com/actions/setup-python' # ref=v7
+[Python CI Pipeline/Test Application] ⭐ Run Main Checkout source code
+[Python CI Pipeline/Test Application]   🐳  docker cp src=/private/tmp/claude-501/-Users-abdurrahman-Desktop-SST-scaler-devops-homework/638b25ba-ee54-46f0-8c86-c07c89fec7b8/scratchpad/work/session16/session16-cicd-github-actions/. dst=/private/tmp/claude-501/-Users-abdurrahman-Desktop-SST-scaler-devops-homework/638b25ba-ee54-46f0-8c86-c07c89fec7b8/scratchpad/work/session16/session16-cicd-github-actions
+[Python CI Pipeline/Test Application]   ✅  Success - Main Checkout source code [36.893917ms]
+[Python CI Pipeline/Test Application] ⭐ Run Main Setup Python
+[Python CI Pipeline/Test Application]   🐳  docker cp src=/Users/abdurrahman/.cache/act/actions-setup-python@v7/ dst=/var/run/act/actions/actions-setup-python@v7/
+[Python CI Pipeline/Test Application]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-setup-python@v7/dist/setup/index.js] user= workdir=
+[Python CI Pipeline/Test Application]   ❓  ::group::Installed versions
+[Python CI Pipeline/Test Application]   | Successfully set up CPython (3.12.15)
+[Python CI Pipeline/Test Application]   ❓  ::endgroup::
+[Python CI Pipeline/Test Application]   ❓ add-matcher /run/act/actions/actions-setup-python@v7/.github/python.json
+[Python CI Pipeline/Test Application]   ✅  Success - Main Setup Python [790.642958ms]
+[Python CI Pipeline/Test Application]   ⚙  ::set-env:: pythonLocation=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Test Application]   ⚙  ::set-env:: PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/3.12.15/arm64/lib/pkgconfig
+[Python CI Pipeline/Test Application]   ⚙  ::set-env:: Python_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Test Application]   ⚙  ::set-env:: Python2_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Test Application]   ⚙  ::set-env:: Python3_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Test Application]   ⚙  ::set-env:: LD_LIBRARY_PATH=/opt/hostedtoolcache/Python/3.12.15/arm64/lib
+[Python CI Pipeline/Test Application]   ⚙  ::set-output:: python-version=3.12.15
+[Python CI Pipeline/Test Application]   ⚙  ::set-output:: python-path=/opt/hostedtoolcache/Python/3.12.15/arm64/bin/python
+[Python CI Pipeline/Test Application]   ⚙  ::add-path:: /opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Test Application]   ⚙  ::add-path:: /opt/hostedtoolcache/Python/3.12.15/arm64/bin
+[Python CI Pipeline/Test Application] ⭐ Run Main Display Python version
+[Python CI Pipeline/Test Application]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/2] user= workdir=
+[Python CI Pipeline/Test Application]   | Python 3.12.15
+[Python CI Pipeline/Test Application]   ✅  Success - Main Display Python version [46.957709ms]
+[Python CI Pipeline/Test Application] ⭐ Run Main Install dependencies
+[Python CI Pipeline/Test Application]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/3] user= workdir=
+[Python CI Pipeline/Test Application]   | Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (26.2.1)
+[Python CI Pipeline/Test Application]   | WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[Python CI Pipeline/Test Application]   | Requirement already satisfied: pytest in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from -r requirements.txt (line 1)) (9.1.1)
+[Python CI Pipeline/Test Application]   | Requirement already satisfied: iniconfig>=1.0.1 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (2.3.1)
+[Python CI Pipeline/Test Application]   | Requirement already satisfied: packaging>=22 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (26.3)
+[Python CI Pipeline/Test Application]   | Requirement already satisfied: pluggy<2,>=1.5 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (1.6.0)
+[Python CI Pipeline/Test Application]   | Requirement already satisfied: pygments>=2.7.2 in /opt/hostedtoolcache/Python/3.12.15/arm64/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 1)) (2.21.0)
+[Python CI Pipeline/Test Application]   | WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[Python CI Pipeline/Test Application]   ✅  Success - Main Install dependencies [512.598583ms]
+[Python CI Pipeline/Test Application] ⭐ Run Main Run tests
+[Python CI Pipeline/Test Application]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/4] user= workdir=
+[Python CI Pipeline/Test Application]   | ============================= test session starts ==============================
+[Python CI Pipeline/Test Application]   | platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.12.15/arm64/bin/python
+[Python CI Pipeline/Test Application]   | cachedir: .pytest_cache
+[Python CI Pipeline/Test Application]   | rootdir: /private/tmp/claude-501/-Users-abdurrahman-Desktop-SST-scaler-devops-homework/638b25ba-ee54-46f0-8c86-c07c89fec7b8/scratchpad/work/session16/session16-cicd-github-actions
+[Python CI Pipeline/Test Application]   | collecting ... collected 5 items
+[Python CI Pipeline/Test Application]   | 
+[Python CI Pipeline/Test Application]   | tests/test_calculator.py::test_add PASSED                                [ 20%]
+[Python CI Pipeline/Test Application]   | tests/test_calculator.py::test_subtract PASSED                           [ 40%]
+[Python CI Pipeline/Test Application]   | tests/test_calculator.py::test_multiply PASSED                           [ 60%]
+[Python CI Pipeline/Test Application]   | tests/test_calculator.py::test_divide PASSED                             [ 80%]
+[Python CI Pipeline/Test Application]   | tests/test_calculator.py::test_divide_by_zero PASSED                     [100%]
+[Python CI Pipeline/Test Application]   | 
+[Python CI Pipeline/Test Application]   | ============================== 5 passed in 0.01s ===============================
+[Python CI Pipeline/Test Application]   ✅  Success - Main Run tests [126.799416ms]
+[Python CI Pipeline/Test Application] ⭐ Run Post Setup Python
+[Python CI Pipeline/Test Application]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-setup-python@v7/dist/cache-save/index.js] user= workdir=
+[Python CI Pipeline/Test Application]   ✅  Success - Post Setup Python [83.151875ms]
+[Python CI Pipeline/Test Application] ⭐ Run Complete job
+[Python CI Pipeline/Test Application] Cleaning up container for job Test Application
+[Python CI Pipeline/Test Application]   ✅  Success - Complete job
+[Python CI Pipeline/Test Application] 🏁  Job succeeded
+[Python CI Pipeline/Build Application] ⭐ Run Set up job
+[Python CI Pipeline/Build Application] 🚀  Start image=catthehacker/ubuntu:act-latest
+[Python CI Pipeline/Build Application]   🐳  docker pull image=catthehacker/ubuntu:act-latest platform= username= forcePull=false
+[Python CI Pipeline/Build Application]   🐳  docker create image=catthehacker/ubuntu:act-latest platform= entrypoint=["tail" "-f" "/dev/null"] cmd=[] network="host"
+[Python CI Pipeline/Build Application]   🐳  docker run image=catthehacker/ubuntu:act-latest platform= entrypoint=["tail" "-f" "/dev/null"] cmd=[] network="host"
+[Python CI Pipeline/Build Application]   🐳  docker exec cmd=[node --no-warnings -e console.log(process.execPath)] user= workdir=
+[Python CI Pipeline/Build Application]   ✅  Success - Set up job
+[Python CI Pipeline/Build Application]   ☁  git clone 'https://github.com/actions/setup-python' # ref=v7
+[Python CI Pipeline/Build Application]   ☁  git clone 'https://github.com/actions/upload-artifact' # ref=v4
+[Python CI Pipeline/Build Application] ⭐ Run Main Checkout source code
+[Python CI Pipeline/Build Application]   🐳  docker cp src=/private/tmp/claude-501/-Users-abdurrahman-Desktop-SST-scaler-devops-homework/638b25ba-ee54-46f0-8c86-c07c89fec7b8/scratchpad/work/session16/session16-cicd-github-actions/. dst=/private/tmp/claude-501/-Users-abdurrahman-Desktop-SST-scaler-devops-homework/638b25ba-ee54-46f0-8c86-c07c89fec7b8/scratchpad/work/session16/session16-cicd-github-actions
+[Python CI Pipeline/Build Application]   ✅  Success - Main Checkout source code [30.984709ms]
+[Python CI Pipeline/Build Application] ⭐ Run Main Setup Python
+[Python CI Pipeline/Build Application]   🐳  docker cp src=/Users/abdurrahman/.cache/act/actions-setup-python@v7/ dst=/var/run/act/actions/actions-setup-python@v7/
+[Python CI Pipeline/Build Application]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-setup-python@v7/dist/setup/index.js] user= workdir=
+[Python CI Pipeline/Build Application]   ❓  ::group::Installed versions
+[Python CI Pipeline/Build Application]   | Successfully set up CPython (3.12.15)
+[Python CI Pipeline/Build Application]   ❓  ::endgroup::
+[Python CI Pipeline/Build Application]   ❓ add-matcher /run/act/actions/actions-setup-python@v7/.github/python.json
+[Python CI Pipeline/Build Application]   ✅  Success - Main Setup Python [714.00425ms]
+[Python CI Pipeline/Build Application]   ⚙  ::set-env:: LD_LIBRARY_PATH=/opt/hostedtoolcache/Python/3.12.15/arm64/lib
+[Python CI Pipeline/Build Application]   ⚙  ::set-env:: pythonLocation=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Build Application]   ⚙  ::set-env:: PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/3.12.15/arm64/lib/pkgconfig
+[Python CI Pipeline/Build Application]   ⚙  ::set-env:: Python_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Build Application]   ⚙  ::set-env:: Python2_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Build Application]   ⚙  ::set-env:: Python3_ROOT_DIR=/opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Build Application]   ⚙  ::set-output:: python-version=3.12.15
+[Python CI Pipeline/Build Application]   ⚙  ::set-output:: python-path=/opt/hostedtoolcache/Python/3.12.15/arm64/bin/python
+[Python CI Pipeline/Build Application]   ⚙  ::add-path:: /opt/hostedtoolcache/Python/3.12.15/arm64
+[Python CI Pipeline/Build Application]   ⚙  ::add-path:: /opt/hostedtoolcache/Python/3.12.15/arm64/bin
+[Python CI Pipeline/Build Application] ⭐ Run Main Build application
+[Python CI Pipeline/Build Application]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/2] user= workdir=
+[Python CI Pipeline/Build Application]   | Starting build...
+[Python CI Pipeline/Build Application]   | Application copied to build directory.
+[Python CI Pipeline/Build Application]   | Build completed successfully.
+[Python CI Pipeline/Build Application]   ✅  Success - Main Build application [47.217583ms]
+[Python CI Pipeline/Build Application] ⭐ Run Main Show build output
+[Python CI Pipeline/Build Application]   🐳  docker exec cmd=[bash -e /var/run/act/workflow/3] user= workdir=
+[Python CI Pipeline/Build Application]   | total 16
+[Python CI Pipeline/Build Application]   | drwxr-xr-x 2 root root 4096 Oct  7 17:28 .
+[Python CI Pipeline/Build Application]   | drwxr-xr-x 7 root root 4096 Oct  7 17:28 ..
+[Python CI Pipeline/Build Application]   | -rw-r--r-- 1 root root   98 Oct  7 17:28 build-info.txt
+[Python CI Pipeline/Build Application]   | -rw-r--r-- 1 root root 1488 Oct  7 17:28 calculator.py
+[Python CI Pipeline/Build Application]   | Application: Session 16 Calculator
+[Python CI Pipeline/Build Application]   | Build Status: SUCCESS
+[Python CI Pipeline/Build Application]   | Build Date: Wed Oct  7 17:28:04 UTC 2026
+[Python CI Pipeline/Build Application]   ✅  Success - Main Show build output [44.541ms]
+[Python CI Pipeline/Build Application] ⭐ Run Main Upload build artifact
+[Python CI Pipeline/Build Application]   🐳  docker cp src=/Users/abdurrahman/.cache/act/actions-upload-artifact@v4/ dst=/var/run/act/actions/actions-upload-artifact@v4/
+[Python CI Pipeline/Build Application]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-upload-artifact@v4/dist/upload/index.js] user= workdir=
+[Python CI Pipeline/Build Application]   | (node:65) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+[Python CI Pipeline/Build Application]   | (Use `node --trace-deprecation ...` to show where the warning was created)
+[Python CI Pipeline/Build Application]   | With the provided path, there will be 2 files uploaded
+[Python CI Pipeline/Build Application]   | Artifact name is valid!
+[Python CI Pipeline/Build Application]   | Root directory input is valid!
+[Python CI Pipeline/Build Application]   | Beginning upload of artifact content to blob storage
+[Python CI Pipeline/Build Application]   | (node:65) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+[Python CI Pipeline/Build Application]   | Uploaded bytes 902
+[Python CI Pipeline/Build Application]   | Finished uploading artifact content to blob storage!
+[Python CI Pipeline/Build Application]   | SHA256 digest of uploaded artifact zip is eee6ce2d0bf479a3d2b753e62c7bc39aa356e0765d5761b344db3d5c84641942
+[Python CI Pipeline/Build Application]   | Finalizing artifact upload
+[Python CI Pipeline/Build Application]   | Artifact calculator-build.zip successfully finalized. Artifact ID 1242866976
+[Python CI Pipeline/Build Application]   | Artifact calculator-build has been successfully uploaded! Final size is 902 bytes. Artifact ID is 1242866976
+[Python CI Pipeline/Build Application]   | Artifact download URL: https://github.com/nektos/act/actions/runs/1/artifacts/1242866976
+[Python CI Pipeline/Build Application]   ✅  Success - Main Upload build artifact [550.352959ms]
+[Python CI Pipeline/Build Application]   ⚙  ::set-output:: artifact-id=1242866976
+[Python CI Pipeline/Build Application]   ⚙  ::set-output:: artifact-digest=eee6ce2d0bf479a3d2b753e62c7bc39aa356e0765d5761b344db3d5c84641942
+[Python CI Pipeline/Build Application]   ⚙  ::set-output:: artifact-url=https://github.com/nektos/act/actions/runs/1/artifacts/1242866976
+[Python CI Pipeline/Build Application] ⭐ Run Post Setup Python
+[Python CI Pipeline/Build Application]   🐳  docker exec cmd=[/opt/acttoolcache/node/24.19.0/arm64/bin/node /var/run/act/actions/actions-setup-python@v7/dist/cache-save/index.js] user= workdir=
+[Python CI Pipeline/Build Application]   ✅  Success - Post Setup Python [81.554042ms]
+[Python CI Pipeline/Build Application] ⭐ Run Complete job
+[Python CI Pipeline/Build Application] Cleaning up container for job Build Application
+[Python CI Pipeline/Build Application]   ✅  Success - Complete job
+[Python CI Pipeline/Build Application] 🏁  Job succeeded

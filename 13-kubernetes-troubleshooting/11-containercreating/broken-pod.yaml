@@ -1,0 +1,21 @@
+# Addition (not in the lecture): a Pod that mounts a ConfigMap which does not exist yet.
+# The scheduler places it, but the kubelet cannot set up the volume, so the container is
+# never created and the Pod sits in ContainerCreating with FailedMount events.
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: mount-demo
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      volumeMounts:
+        - name: site-config
+          mountPath: /etc/site
+
+  volumes:
+    - name: site-config
+      configMap:
+        name: site-config

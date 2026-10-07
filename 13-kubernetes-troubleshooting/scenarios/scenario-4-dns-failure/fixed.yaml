@@ -1,0 +1,23 @@
+# Fix:
+#  1. hostname: "postgres-db-wrong-name.production" -> "postgres-db.troubleshooting-lab"
+#     (the real Service name, in the namespace where it actually exists on this cluster)
+#  2. curl -s -> curl -sS: -s alone also hides error messages, which is why the broken
+#     Pod's logs showed nothing at all. -S keeps errors visible.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-4-dns-failure-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: dns-failure
+spec:
+  containers:
+    - name: client
+      image: curlimages/curl:8.6.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "Attempting connection to internal database...";
+          curl -sS --connect-timeout 3 http://postgres-db.troubleshooting-lab.svc.cluster.local:5432 || true
+          echo "Process sleeping...";
+          sleep 3600

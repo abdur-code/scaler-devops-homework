@@ -1,0 +1,3 @@
+-r requirements.txt
+pytest==9.0.3  # SCA fix: PYSEC-2026-1845 (CVE-2025-71176), fixed in 9.0.3
+pytest-cov==6.0.0

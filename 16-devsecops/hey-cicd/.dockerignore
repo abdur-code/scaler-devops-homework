@@ -1,0 +1,29 @@
+# Fix: the lecture repo's ".dockerignore" was really named ".dockerignore␠␠│"
+# (two spaces and a box-drawing character), so Docker never read it and the
+# Mac's app/__pycache__ ended up inside the image.
+#
+# Only requirements.txt and app/ are copied into the image, but the whole folder
+# is sent to the builder as context, so keep everything else out of it.
+
+# Python caches and local environments
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.coverage
+htmlcov
+.venv
+venv
+
+# Not needed at runtime
+tests
+k8s
+reports
+.github
+*.md
+
+# VCS and tool config
+.git
+.gitignore
+.gitleaks.toml
+.dockerignore
+Dockerfile

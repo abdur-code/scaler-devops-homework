@@ -1,0 +1,21 @@
+# gitleaks configuration for hey-cicd.
+# gitleaks picks this file up automatically when it scans this directory
+# (gitleaks dir . / gitleaks git .), locally and in the pipeline.
+
+title = "hey-cicd secret scanning rules"
+
+# Keep all of gitleaks' built-in rules (AWS keys, GitHub tokens, private keys, ...).
+[extend]
+useDefault = true
+
+# The built-in generic-api-key rule only fires on high-entropy values, so a
+# hard-coded but "boring" credential such as
+#     AWS_ACCESS_KEY = "real-secret-value"
+# (the exact line the lecture says never to write) slips through. This rule flags
+# any string literal of 8+ characters assigned to a credential-looking name.
+[[rules]]
+id = "hardcoded-credential-assignment"
+description = "String literal assigned to a credential-looking variable"
+regex = '''(?i)\b[a-z0-9_]*(?:password|passwd|secret|token|api_key|access_key)[a-z0-9_]*\s*[:=]\s*["']([^"'\s]{8,})["']'''
+secretGroup = 1
+keywords = ["password", "passwd", "secret", "token", "api_key", "access_key"]

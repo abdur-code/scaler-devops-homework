@@ -1,0 +1,14 @@
+# Fix: the notes run "helm lint my-app/", but the lecture folder only had a bare
+# Chart.yaml. Moved it into my-app/ so the command has a chart directory to lint.
+apiVersion: v2
+name: my-app
+description: A learning chart for the Chart.yaml topic
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - nginx
+  - web
+maintainers:
+  - name: Student
+    email: student@example.com

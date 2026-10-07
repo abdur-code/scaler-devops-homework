@@ -1,0 +1,262 @@
+name: DevSecOps Pipeline
+
+# Corrected version of the lecture workflow. Changes, and why:
+#  - Jobs now run strictly in the homework order, chained with `needs:`
+#    (build -> unit test -> SAST -> SCA -> secret scan -> docker build -> image scan
+#    -> security gate -> push -> deploy). Before, test/SAST/SCA ran in parallel.
+#  - SAST gate: bandit (fails on MEDIUM/HIGH). CodeQL still runs, but its findings go
+#    to the Security tab; codeql-action does not fail a job on alerts, so on its own
+#    it never blocked anything.
+#  - New secret-scanning job (gitleaks, working tree + full git history).
+#  - The image is built ONCE and handed to later jobs as an artifact. Before, the scan
+#    and push jobs each rebuilt it, so the pushed image was not the scanned image.
+#  - Trivy runs with `--exit-code 1`, so HIGH/CRITICAL findings really stop the run.
+#  - Push goes to GHCR with the built-in GITHUB_TOKEN, not to the instructor's
+#    Docker Hub account.
+#  - Push and deploy only run for a push to main; pull requests stop after the gate.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  IMAGE_NAME: hey-cicd
+  NAMESPACE: devsecops-lab
+
+jobs:
+
+  # ---------------------------------------------------------------- 1. Build
+  build:
+    name: 1. Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Import check
+        run: python -c "from app.app import app; print(app.name, 'imports,', len(list(app.url_map.iter_rules())), 'routes')"
+
+  # ---------------------------------------------------------------- 2. Unit tests
+  unit-test:
+    name: 2. Unit Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install -r requirements-dev.txt
+      - name: "Run tests (gate: all pass, coverage >= 60%)"
+        run: pytest --cov=app --cov-report=term-missing --cov-fail-under=60
+
+  # ---------------------------------------------------------------- 3. SAST
+  sast:
+    name: 3. SAST - Bandit
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install bandit==1.9.4
+      - name: Full report (all severities, informational)
+        run: bandit -r app --exit-zero
+      - name: Gate (fail on MEDIUM or HIGH severity)
+        run: bandit -r app --severity-level medium
+
+  codeql:
+    name: 3b. SAST - CodeQL (Security tab)
+    needs: unit-test
+    # CodeQL needs GitHub's code-scanning API, so it cannot run under `act`.
+    if: ${{ !github.event.act }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      - uses: github/codeql-action/analyze@v3
+
+  # ---------------------------------------------------------------- 4. SCA
+  sca:
+    name: 4. SCA - pip-audit
+    needs: sast
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install pip-audit==2.10.1
+      - name: Gate (fail on any known vulnerability in pinned dependencies)
+        run: pip-audit --progress-spinner off -r requirements.txt -r requirements-dev.txt
+
+  # ---------------------------------------------------------------- 5. Secret scan
+  secret-scan:
+    name: 5. Secret Scan - Gitleaks
+    needs: sca
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history: a secret deleted in a later commit is still leaked
+      - run: bash .github/scripts/install-scanner.sh gitleaks
+      - name: Gate - working tree (built-in rules + .gitleaks.toml)
+        run: gitleaks dir . --redact -v
+      - name: Gate - git history
+        run: gitleaks git . --redact -v
+
+  # ---------------------------------------------------------------- 6. Docker build
+  docker-build:
+    name: 6. Docker Build
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t "$IMAGE_NAME:$GITHUB_SHA" .
+      - name: Save image for the next jobs (scan, gate and push use this exact image)
+        run: docker save "$IMAGE_NAME:$GITHUB_SHA" | gzip > "$RUNNER_TEMP/image.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image
+          path: ${{ runner.temp }}/image.tar.gz
+          retention-days: 1
+
+  # ---------------------------------------------------------------- 7. Image scan
+  image-scan:
+    name: 7. Container Image Scan - Trivy
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: image
+          path: ${{ runner.temp }}
+      - run: docker load -i "$RUNNER_TEMP/image.tar.gz"
+      - run: bash .github/scripts/install-scanner.sh trivy
+      - name: Full report (all severities, informational)
+        run: |
+          trivy image "$IMAGE_NAME:$GITHUB_SHA"
+          trivy image --format json -o trivy-report.json "$IMAGE_NAME:$GITHUB_SHA"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
+
+  # ---------------------------------------------------------------- 8. Security gate
+  security-gate:
+    name: 8. Security Gate
+    needs: image-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: image
+          path: ${{ runner.temp }}
+      - run: docker load -i "$RUNNER_TEMP/image.tar.gz"
+      - run: bash .github/scripts/install-scanner.sh trivy
+      - name: Gate (fail on any HIGH or CRITICAL vulnerability)
+        run: |
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            "$IMAGE_NAME:$GITHUB_SHA"
+
+  # ---------------------------------------------------------------- 9. Push
+  push:
+    name: 9. Push Image to GHCR
+    needs: security-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: image
+          path: ${{ runner.temp }}
+      - run: docker load -i "$RUNNER_TEMP/image.tar.gz"
+      - name: Image name (GHCR needs a lowercase repository name)
+        id: meta
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and push (commit SHA + latest)
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: |
+          docker tag "$IMAGE_NAME:$GITHUB_SHA" "$IMAGE:$GITHUB_SHA"
+          docker tag "$IMAGE_NAME:$GITHUB_SHA" "$IMAGE:latest"
+          docker push "$IMAGE:$GITHUB_SHA"
+          docker push "$IMAGE:latest"
+
+  # ---------------------------------------------------------------- 10. Deploy
+  # A GitHub-hosted runner cannot reach minikube on a laptop (see the lecture's
+  # 03-kubernetes-deployment notes), so this job deploys to a throwaway kind cluster
+  # inside the runner, pulling the image from GHCR like a real cluster would. For a
+  # real cluster, replace the kind step with a kubeconfig from a KUBE_CONFIG secret.
+  deploy:
+    name: 10. Deploy to Kubernetes
+    needs: push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE: ${{ needs.push.outputs.image }}:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create a kind cluster
+        uses: helm/kind-action@v1
+      - name: Namespace and GHCR pull secret
+        run: |
+          kubectl create namespace "$NAMESPACE"
+          kubectl -n "$NAMESPACE" create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" \
+            --docker-password="${{ secrets.GITHUB_TOKEN }}"
+          until kubectl -n "$NAMESPACE" get serviceaccount default >/dev/null 2>&1; do sleep 1; done
+          kubectl -n "$NAMESPACE" patch serviceaccount default \
+            -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}'
+      - name: Deploy the image that passed the gate
+        run: |
+          sed "s|image: hey-cicd:.*|image: $IMAGE|" k8s/deployment.yaml | kubectl -n "$NAMESPACE" apply -f -
+          kubectl -n "$NAMESPACE" apply -f k8s/service.yaml
+      - name: Wait for rollout
+        run: kubectl -n "$NAMESPACE" rollout status deployment/session17-python --timeout=180s
+      - name: Verify
+        run: |
+          kubectl -n "$NAMESPACE" get deployment,pods,service -o wide
+          kubectl -n "$NAMESPACE" port-forward service/session17-python 18080:80 &
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:18080/health && break; sleep 1; done
+          echo
+          curl -fsS http://127.0.0.1:18080/api/status

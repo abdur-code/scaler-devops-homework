@@ -1,0 +1,16 @@
+# Fix: the lecture README says "kubectl apply -f pod.yaml", but this folder ships the
+# manifest as demo-pod.yaml, so the command is: kubectl apply -f demo-pod.yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: describe-demo
+  labels:
+    app: describe-demo
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      ports:
+        - containerPort: 80

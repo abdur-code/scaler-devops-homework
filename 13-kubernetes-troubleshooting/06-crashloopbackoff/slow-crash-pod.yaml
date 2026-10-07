@@ -1,0 +1,22 @@
+# Addition (not in the lecture): a container that runs for 20 seconds and then crashes.
+# After the first restart the *current* container is running again, so
+# `kubectl logs slow-crash --previous` can show the crashed run's output.
+# (With crash-demo the current container is itself already dead, see README.)
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: slow-crash
+
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "$(date +%T) run started, connecting to payment API..."
+          sleep 20
+          echo "$(date +%T) FATAL: payment API timed out, exiting"
+          exit 1

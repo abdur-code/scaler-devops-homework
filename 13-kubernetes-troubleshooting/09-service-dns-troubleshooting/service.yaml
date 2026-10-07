@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: web-service
+
+spec:
+  # Fix: the lecture copy had "app: web-ahsgdf", which matches no Pod, so the Service
+  # had no endpoints. The Deployment's Pods are labelled app=web (and the README says so).
+  selector:
+    app: web
+
+  ports:
+    - port: 80
+      targetPort: 80
+
+  type: ClusterIP

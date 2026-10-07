@@ -1,0 +1,11 @@
+# Addition (not in the lecture): application settings stored in a ConfigMap.
+# Note the key name: database_host
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: app-settings
+
+data:
+  database_host: postgres-db.troubleshooting-lab.svc.cluster.local
+  log_level: info

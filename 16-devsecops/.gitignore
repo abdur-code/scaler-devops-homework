@@ -1,0 +1,7 @@
+# Generated while running the lecture steps; never commit these
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.venv/
+reports/

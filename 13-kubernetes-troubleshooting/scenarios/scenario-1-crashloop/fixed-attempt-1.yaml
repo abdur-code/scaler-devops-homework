@@ -1,0 +1,28 @@
+# Fix attempt 1: give the app the DATABASE_URL it needs. The value points at the lab's
+# stand-in database Service from scenario 4.
+# This alone is NOT enough: the script prints its message and exits 0, and a Pod's default
+# restartPolicy is Always, so the kubelet keeps restarting a container that succeeded.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-1-crashloop-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: crashloop
+spec:
+  containers:
+    - name: python-app
+      image: python:3.11-alpine
+      env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres-db.troubleshooting-lab.svc.cluster.local:5432/app"
+      command:
+        - "python3"
+        - "-c"
+        - |
+          import os, sys
+          db_url = os.environ.get("DATABASE_URL")
+          if not db_url:
+              print("[FATAL ERROR]: DATABASE_URL environment variable is MISSING!", file=sys.stderr)
+              sys.exit(1)
+          print("Application started successfully!")

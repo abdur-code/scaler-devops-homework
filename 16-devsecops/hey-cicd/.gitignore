@@ -1,0 +1,12 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# scan reports
+reports/
+trivy-report.json

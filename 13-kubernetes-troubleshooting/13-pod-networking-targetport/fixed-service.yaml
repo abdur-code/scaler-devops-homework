@@ -1,0 +1,17 @@
+# Fix: point targetPort at the container's named port "http" (containerPort 80), so the
+# Service follows the container port even if it changes later.
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: net-demo-svc
+
+spec:
+  selector:
+    app: net-demo
+
+  ports:
+    - port: 80
+      targetPort: http
+
+  type: ClusterIP

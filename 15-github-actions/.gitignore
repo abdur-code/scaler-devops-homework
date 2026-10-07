@@ -1,0 +1,7 @@
+# generated while running the lecture commands locally
+build/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.act-artifacts/

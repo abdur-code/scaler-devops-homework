@@ -1,0 +1,38 @@
+# Stand-in for the missing dependency. The scenario expects a "postgres-db" Service in a
+# "production" namespace, which does not exist on this cluster. I don't create other
+# namespaces on the shared cluster, so the database lives in my lab namespace instead.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            # lab only: no password, local trust auth
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+          ports:
+            - name: postgres
+              containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-db
+spec:
+  selector:
+    app: postgres-db
+  ports:
+    - port: 5432
+      targetPort: postgres
