@@ -1,0 +1,33 @@
+# Apply this file from your local/admin environment; do not put it under the Git source path.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-app
+  namespace: argocd
+  # Fix: without this finalizer, `kubectl delete` of the Application removes only the
+  # Application and leaves the Deployment/Service running (the notes say it removes both).
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Nency-Ravaliya/gitops-demo.git
+    targetRevision: main
+    path: app
+    # Fix: the instructor's repo keeps this very file inside app/, so Argo CD also syncs the
+    # Application from Git and overwrites local changes to it (it removed the finalizer above).
+    # Leave it out of what Argo CD renders, as the comment on line 1 intends.
+    directory:
+      exclude: argocd-application.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: session20
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

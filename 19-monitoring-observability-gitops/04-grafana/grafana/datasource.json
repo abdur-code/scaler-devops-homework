@@ -1,0 +1,8 @@
+{
+  "name": "Prometheus",
+  "uid": "session20-prom",
+  "type": "prometheus",
+  "url": "http://prometheus:9090",
+  "access": "proxy",
+  "isDefault": true
+}

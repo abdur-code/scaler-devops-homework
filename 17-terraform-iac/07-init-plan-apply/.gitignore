@@ -1,0 +1,8 @@
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfplan
+crash.log
+# Fix: "terraform plan -out=tfplan" writes a file named exactly "tfplan",
+# which "*.tfplan" does not match
+tfplan

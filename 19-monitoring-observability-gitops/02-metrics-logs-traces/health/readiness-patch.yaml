@@ -1,0 +1,11 @@
+# Addition (not in the lecture): give the demo container a readiness probe on the
+# port its Service sends traffic to (8080). Applied with `kubectl patch --patch-file`.
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 5

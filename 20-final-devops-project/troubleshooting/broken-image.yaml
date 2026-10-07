@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: taskboard-broken-image, namespace: taskboard}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: broken-image}}
+  template:
+    metadata: {labels: {app: broken-image}}
+    spec:
+      # Fix: the image was ghcr.io/example/taskboard-backend:does-not-exist, which does not
+      # exist (ghcr.io answers 403), so the Pod sat in ErrImagePull/ImagePullBackOff.
+      # Use the backend image I built and loaded into minikube instead.
+      # With a real image the container starts, but the backend then crashed connecting to
+      # localhost:5432 (its default DATABASE_URL). Point it at the chart's Postgres Service,
+      # the same value the Helm backend Deployment uses.
+      containers:
+      - name: backend
+        image: taskboard-backend:local
+        env: [{name: DATABASE_URL, value: "postgresql+psycopg://taskboard:taskboard@taskboard-postgres:5432/taskboard"}]

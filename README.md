@@ -24,6 +24,20 @@ is copied from notes.
 | 9 | [Pods, ReplicaSets, Deployments](09-kubernetes-pods-replicasets-deployments/) | self-healing, scaling, rolling update, `rollout undo` |
 | 10 | [Kubernetes Networking & Services](10-kubernetes-networking-services/) | ClusterIP, NodePort, LoadBalancer, ExternalName, headless |
 | 11 | [Ingress, ConfigMaps & Secrets](11-kubernetes-ingress-configmaps-secrets/) | config injection, base64 secrets, path-based routing |
+| 12 | [Storage, HPA & Probes](12-kubernetes-storage-hpa-probes/) | emptyDir, hostPath, PV/PVC, StorageClass, HPA under load, liveness/readiness/startup probes |
+| 13 | [Kubernetes Troubleshooting](13-kubernetes-troubleshooting/) | get/describe/logs/exec/events/explain/top, CrashLoopBackOff, ImagePullBackOff, Pending, DNS, triage scenarios |
+| 14 | [Helm](14-helm/) | create, install, upgrade, history, rollback, repo/search, values files, rollback workflow |
+| 15 | [CI/CD & GitHub Actions](15-github-actions/) | workflows, jobs, runners, secrets, artifacts, build/test pipeline, Dockerfile + CD stage (run locally with `act`) |
+| 16 | [CI/CD & DevSecOps](16-devsecops/) | bandit (SAST), pip-audit (SCA), gitleaks, Trivy image gate, k8s deploy, full local pipeline |
+| 17 | [Terraform & IaC](17-terraform-iac/) | init/fmt/validate/plan/apply/show/output/destroy, S3 demo on AWS, AWS services research |
+| 18 | [Cloud & Terraform in Action](18-cloud-terraform/) | VPC, subnets, route tables, security groups, EC2 + S3 on AWS, state and dependencies |
+| 19 | [Monitoring, Observability & GitOps](19-monitoring-observability-gitops/) | Prometheus, alert rules, Grafana, logs/metrics/traces, Argo CD sync and self-heal |
+| 20 | [Final DevOps Project](20-final-devops-project/) | TaskBoard: Compose, tests, Docker, Helm on minikube, Ingress, HPA, troubleshooting, Terraform EKS on AWS |
+
+Folder numbers run one behind the class session numbers: class sessions 1 and 2 were both
+Linux and share folder 1, so folder 12 is class session 13 and folder 20 is class session 21.
+Everything created on AWS (sections 17, 18 and 20) was destroyed straight after its
+screenshots were taken.
 
 ## Environment
 

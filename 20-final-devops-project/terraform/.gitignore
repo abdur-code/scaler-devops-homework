@@ -1,0 +1,8 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Added: saved plan files can contain sensitive values and must not be committed
+tfplan
+*.tfplan

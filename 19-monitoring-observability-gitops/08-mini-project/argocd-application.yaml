@@ -1,0 +1,30 @@
+# Apply this file from your local/admin environment; do not put it under the Git source path.
+# Changed from the lecture copy:
+#  - moved out of app/ (Step 3 says the Application must stay outside the path it watches)
+#  - repoURL set to my own repository instead of the YOUR_USERNAME/YOUR_GITOPS_REPO placeholder
+#  - resources finalizer added, so deleting the Application also deletes what it deployed
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-mini
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/abdur-code/session20-gitops.git
+    targetRevision: main
+    path: app
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: session20
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

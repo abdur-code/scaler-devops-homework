@@ -1,0 +1,6 @@
+# Added: the lecture folder had no .gitignore (03-09 do)
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfplan
+crash.log

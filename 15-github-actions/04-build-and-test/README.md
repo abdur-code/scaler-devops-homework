@@ -20,7 +20,6 @@ pipeline fail, and fixed it.
 ├── tests/test_calculator.py     5 tests
 ├── requirements.txt             pytest
 ├── build.sh                     copies the app into build/ and writes build-info.txt
-├── logs/                        full act output of the three pipeline runs
 ├── screenshots/
 └── README.md
 ```
@@ -122,8 +121,8 @@ removed them after the session.
 ## 5. Run the pipeline (act instead of `git push`)
 
 `ci.yml` triggers on `push` to `main`, `pull_request` and `workflow_dispatch`. I ran the
-`push` event. The full act log is about 110 lines (mostly pip download output), so I saved
-it with `tee` to `logs/ci-pass.log` and filtered the screen down to the step results and
+`push` event. The full act log is about 110 lines (mostly pip download output), so I
+filtered the screen down to the step results and
 test lines, which is roughly what the GitHub run page shows.
 
 ```bash

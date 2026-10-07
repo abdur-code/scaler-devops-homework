@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata: {name: broken-service, namespace: taskboard}
+spec:
+  # Fix: the selector was {app: label-that-does-not-exist}. No Pod has that label, so the
+  # Service had no endpoints. The backend Pods are labelled app=taskboard-backend.
+  selector: {app: taskboard-backend}
+  # Fix: targetPort was 8080, but the backend container listens on 8000 (see the backend
+  # endpoints). The Service can keep port 8080 for its clients.
+  ports: [{port: 8080, targetPort: 8000}]

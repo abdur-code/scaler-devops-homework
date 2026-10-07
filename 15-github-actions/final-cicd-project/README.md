@@ -41,7 +41,7 @@ later (see the end of this file).
 | GitHub Actions workflow | `.github/workflows/ci-cd.yml` |
 | CI pipeline | jobs `test`, `security-check`, `build` in `ci-cd.yml` (steps 1–8 below) |
 | CD pipeline | job `docker` in `ci-cd.yml` (steps 9–17 below) |
-| Screenshots of pipeline execution | `screenshots/` (17 images), full act logs in `logs/` |
+| Screenshots of pipeline execution | `screenshots/` (17 images) |
 | README | this file |
 
 ## Folder structure
@@ -58,7 +58,6 @@ final-cicd-project/
 ├── Dockerfile                    addition: packages build/ into python:3.12-slim, non-root
 ├── .dockerignore                 addition
 ├── .gitignore                    lecture
-├── logs/                         full act output of each pipeline run
 ├── screenshots/
 └── README.md
 ```
@@ -83,7 +82,7 @@ final-cicd-project/
 
   Each act run is piped through `tee ../logs/<name>.log | grep -E '…'`, so the screenshot
   shows the step results (act's Success / Failure / Job succeeded lines) and the important output lines. The complete,
-  unfiltered output is in `logs/`.
+  unfiltered output was only kept locally.
 
 ---
 
@@ -218,8 +217,7 @@ echo "act exit code: ${pipestatus[1]}"
 ![fix and rerun](screenshots/08-fix-commit-rerun_24BCS10244.png)
 
 Three commits now (add → break → fix), and all three jobs succeed again, which is section 12
-of the notes. (This time I filtered to just the job results to keep it short; the full run
-is in `logs/final-ci-fixed.log`.)
+of the notes. (This time I filtered to just the job results to keep it short.)
 
 ---
 
@@ -379,8 +377,7 @@ All four jobs succeeded:
   tagged with the commit sha `23a2c81…` and `latest`; the smoke test got `Result: 15.0` and
   `Cannot divide by zero`; then **"Image built and tested, NOT pushed. …
   running-under-act=true"**. The two push steps were skipped (act doesn't print skipped
-  steps; there is no `docker login` / `docker push` anywhere in
-  `logs/final-cicd-push.log`).
+  steps, and the full output of that run has no `docker login` / `docker push`).
 
 Why `--env GITHUB_REPOSITORY…`: act fills `github.repository` from the repo's git remote.
 My scratch repo has no remote on purpose, so act would use its placeholder `nektos/act` and

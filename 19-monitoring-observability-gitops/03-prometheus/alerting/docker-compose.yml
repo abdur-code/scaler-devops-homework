@@ -1,0 +1,17 @@
+# Addition (not in the lecture): the 03 Prometheus setup plus one alerting rule and a
+# second scrape target (node-exporter) that can be stopped to make the alert fire.
+name: session20-alerting
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: session20-prometheus-alerts
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    container_name: session20-node-exporter

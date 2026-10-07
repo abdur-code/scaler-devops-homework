@@ -37,17 +37,17 @@ Lecture → folder: `01-ci-vs-cd` + `02-cicd-pipeline` → `01`; `03-github-acti
 ├── 02-workflows-jobs-runners/    .github/workflows/: hello-actions, workflow-demo, jobs-steps,
 │                                 jobs-steps-needs (addition), runner-demo
 ├── 03-secrets-and-artifacts/     .github/workflows/: secrets-demo, artifact-demo; build.sh
-├── 04-build-and-test/            app/, tests/, build.sh, requirements.txt, .github/workflows/ci.yml, logs/
-├── 05-demo-project/              the demo project after the hands-on task (power()), logs/
+├── 04-build-and-test/            app/, tests/, build.sh, requirements.txt, .github/workflows/ci.yml
+├── 05-demo-project/              the demo project after the hands-on task (power())
 ├── final-cicd-project/           app/, tests/, build.sh, Dockerfile, .dockerignore,
-│                                 .github/workflows/ci-cd.yml, logs/
+│                                 .github/workflows/ci-cd.yml
 ├── .gitignore                    build/, caches, local act artifacts
 └── README.md
 ```
 
 Every subfolder has its own `README.md` and a `screenshots/` folder: 52 screenshots in
-total (2 + 7 + 5 + 9 + 12 + 17). The `logs/` folders hold the complete, unfiltered `act`
-output of each pipeline run; the screenshots show a filtered view of the same runs.
+total (2 + 7 + 5 + 9 + 12 + 17). Each `act` run was piped through `tee` and `grep`, so the
+screenshots show a filtered view of the run; the full output was only kept locally.
 
 ## Environment notes
 

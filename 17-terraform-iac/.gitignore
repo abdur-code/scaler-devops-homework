@@ -1,0 +1,8 @@
+# Terraform working files that must never be committed
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log

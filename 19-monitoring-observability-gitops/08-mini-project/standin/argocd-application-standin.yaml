@@ -1,0 +1,33 @@
+# Addition (not in the lecture): a local stand-in for Step 5 until my own Git repo exists.
+# It points Argo CD (read-only) at the public course repo, at the same 08-mini-project/app
+# folder these files were copied from, so namespace/deployment/service are the lecture's.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-mini
+  namespace: argocd
+  # cascade delete: removing this Application also removes what it deployed
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Nency-Ravaliya/devops-heros.git
+    targetRevision: main
+    path: session20-monitoring-observability-gitops/08-mini-project/app
+    directory:
+      # that folder also holds argocd-application.yaml; Step 3 says the Application
+      # must not be rendered from the path it watches, so leave it out
+      exclude: argocd-application.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: session20
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

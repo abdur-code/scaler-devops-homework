@@ -1,0 +1,36 @@
+{
+  "overwrite": true,
+  "dashboard": {
+    "uid": "session20",
+    "title": "Session 20 - Prometheus health",
+    "time": { "from": "now-15m", "to": "now" },
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Targets up",
+        "gridPos": { "x": 0, "y": 0, "w": 8, "h": 6 },
+        "datasource": { "type": "prometheus", "uid": "session20-prom" },
+        "targets": [ { "refId": "A", "expr": "up" } ]
+      },
+      {
+        "id": 2,
+        "type": "timeseries",
+        "title": "Prometheus CPU (% of one core)",
+        "gridPos": { "x": 8, "y": 0, "w": 8, "h": 6 },
+        "datasource": { "type": "prometheus", "uid": "session20-prom" },
+        "targets": [ { "refId": "A", "expr": "rate(process_cpu_seconds_total[1m]) * 100" } ]
+      },
+      {
+        "id": 3,
+        "type": "timeseries",
+        "title": "Prometheus memory (bytes)",
+        "gridPos": { "x": 16, "y": 0, "w": 8, "h": 6 },
+        "datasource": { "type": "prometheus", "uid": "session20-prom" },
+        "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+        "targets": [ { "refId": "A", "expr": "process_resident_memory_bytes" } ]
+      }
+    ]
+  }
+}

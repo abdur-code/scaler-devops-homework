@@ -1,0 +1,12 @@
+{
+  "from": "now-5m",
+  "to": "now",
+  "queries": [
+    {
+      "refId": "A",
+      "datasource": { "type": "prometheus", "uid": "session20-prom" },
+      "expr": "up",
+      "instant": true
+    }
+  ]
+}

@@ -26,7 +26,6 @@ repo-local git identity and **no remote**. This folder is a copy of its final st
 ├── tests/test_calculator.py     lecture tests + test_power()
 ├── requirements.txt
 ├── build.sh
-├── logs/                        full act output of both pipeline runs
 ├── screenshots/
 └── README.md
 ```
@@ -174,8 +173,7 @@ echo "act exit code: ${pipestatus[1]}"
 ![act ci run](screenshots/09-act-ci-run_24BCS10244.png)
 
 `[PASS] Test Application`, then `[PASS] Build Application` with `calculator-build`
-uploaded, which is the "Expected Successful Pipeline" from the notes. The full log is in
-`logs/demo-ci.log`.
+uploaded, which is the "Expected Successful Pipeline" from the notes.
 
 ## 10. Student hands-on task: add `power()`
 

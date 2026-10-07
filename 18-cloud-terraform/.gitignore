@@ -1,0 +1,11 @@
+# Terraform working files: provider binaries, state (it holds real resource IDs) and plans
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+
+# my own public IP for the 09 security group rule; created locally, never committed
+myip.auto.tfvars

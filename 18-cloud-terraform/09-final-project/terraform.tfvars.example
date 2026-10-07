@@ -1,0 +1,7 @@
+aws_region    = "ap-south-1"
+project_name  = "session19-final"
+instance_type = "t3.micro"
+bucket_name   = "abdur-24bcs10244-s19-final-project"
+
+# my_ip_cidr is deliberately not here. It goes in myip.auto.tfvars (git-ignored):
+#   echo "my_ip_cidr = \"$(curl -s https://checkip.amazonaws.com)/32\"" > myip.auto.tfvars

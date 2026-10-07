@@ -1,0 +1,11 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy==2.0.36
+# Fix: psycopg-binary 3.2.3 has no wheel for Python 3.14 (the first one is 3.2.10),
+# so `pip install` failed on my Mac. 3.2.10 still supports the Python 3.12 Docker image.
+psycopg[binary]==3.2.10
+pydantic-settings==2.7.1
+prometheus-fastapi-instrumentator==7.0.2
+alembic==1.14.0
+pytest==8.3.4
+httpx==0.28.1

@@ -104,6 +104,22 @@ All 10 stages pass:
 - The namespace, Deployment and Service are created, and both Pods run the new tag.
 - The smoke test gets `{"status":"healthy"}` back through the cluster.
 
+## 8.4 Cleanup
+
+```bash
+kubectl delete namespace devsecops-lab
+minikube image rm hey-cicd:1.0 hey-cicd:1.1 hey-cicd:8955681d9f hey-cicd:cb7b4ef0c0
+minikube image ls | grep -c hey-cicd
+docker rmi session17-python:1.0 session17-python:1.1 session17-python:1.2 $(docker images hey-cicd --format "{{.Repository}}:{{.Tag}}") | grep -c -E "Untagged|Deleted"
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -c -E "^(hey-cicd|session17-python):"
+kubectl get namespace devsecops-lab
+```
+
+![cleanup](screenshots/04-cleanup_24BCS10244.png)
+
+The namespace (and with it the Deployment, Pods and Service) is gone, minikube holds no
+`hey-cicd` images, and none of the images I built in this session are left in Docker.
+
 ## What I understood
 
 - A pipeline is a chain of gates. Ordering matters: the cheap, fast checks (tests,

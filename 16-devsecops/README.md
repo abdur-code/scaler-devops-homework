@@ -76,7 +76,7 @@ Every screenshot is my own terminal.
 ```
 
 Each numbered folder has a README with the commands, screenshots (in `screenshots/`)
-and what the output shows. 63 screenshots in total.
+and what the output shows. 67 screenshots in total.
 
 ## Problems found in the lecture material
 
