@@ -35,7 +35,7 @@ def test_greet(client):
     assert response.status_code == 200
 
     data = response.get_json()
-    # The response contains a random greeting — just check the name is in it
+    # The response contains a random greeting, so it only checks that the name is in it
     assert "Nensi" in data["message"]
 
 
@@ -52,7 +52,7 @@ def test_add_numbers(client):
     assert data["result"] == 30
 
 
-# ── Test 5: Add numbers — missing fields returns 400 ──
+# ── Test 5: Add numbers, missing fields returns 400 ──
 
 def test_add_numbers_missing_fields(client):
     response = client.post(
@@ -75,7 +75,7 @@ def test_calculator_multiply(client):
     assert data["result"] == 20
 
 
-# ── Test 7: Calculator — divide by zero ───────────────
+# ── Test 7: Calculator, divide by zero ────────────────
 
 def test_calculator_divide_by_zero(client):
     response = client.post(

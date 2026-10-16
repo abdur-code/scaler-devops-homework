@@ -4,12 +4,10 @@
 **Enrollment number:** 24BCS10244
 
 Session 14, Task 1. `kubectl logs` shows what the application itself wrote to stdout and
-stderr. It answers "what is the application saying?".
+stderr, so it tells me what the application is saying.
 
 Files: `pod.yaml`, a `busybox:1.36` Pod (`logs-demo`, container name `app`) that prints
 four start-up lines and then "Application is healthy" every 5 seconds.
-
----
 
 ## 1. Create the Pod
 
@@ -29,8 +27,8 @@ kubectl logs logs-demo
 
 ![logs](screenshots/02-logs_24BCS10244.png)
 
-The four start-up lines appear exactly as the notes expect, followed by one
-"Application is healthy" line per 5 seconds since the Pod started.
+The four start-up lines appear as the notes describe, followed by one
+"Application is healthy" line for every 5 seconds since the Pod started.
 
 ## 3. Follow the logs
 
@@ -56,13 +54,13 @@ kubectl get pod logs-demo
 
 `Error from server (BadRequest): previous terminated container "app" in pod "logs-demo" not found`.
 
-**Root cause.** `--previous` shows the logs of the container instance *before the last
-restart*. `RESTARTS` is `0`, so there is no earlier instance. The command isn't wrong;
-it just doesn't apply to a healthy Pod.
+Root cause: `--previous` shows the logs of the container instance before the last
+restart. `RESTARTS` is `0`, so there is no earlier instance. The command itself is
+fine; it just doesn't apply to a healthy Pod.
 
-**Fix.** Only use `--previous` once RESTARTS is above 0. I showed it working in
+Fix: `--previous` only makes sense once RESTARTS is above 0. I showed it working in
 [06-crashloopbackoff](../06-crashloopbackoff/README.md#5-logs---previous-when-it-works-and-when-it-doesnt).
-That section also shows a second case where it still fails.
+That section also has a second case where it still fails.
 
 ## 5. Choose a container, tail, timestamps
 
@@ -85,11 +83,9 @@ kubectl delete -f pod.yaml
 
 ![cleanup](screenshots/06-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
-- Logs are the application's view; events are Kubernetes' view. A crash needs both.
+- Logs are the application's view and events are Kubernetes' view. A crash needs both.
 - `-f` follows, `--tail` limits, `--timestamps` adds times, and `-c` picks a container.
 - `--previous` is for crashed containers only. With `RESTARTS 0` there is nothing to show.
 - Logs only show what the app writes to stdout/stderr. An app that logs to a file inside

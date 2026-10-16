@@ -3,11 +3,12 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Class session 13. Lecture material: [`session-13-storage-hpa-probes`](https://github.com/Nency-Ravaliya/devops-heros/tree/main/session-13-storage-hpa-probes)
-in the course repo. Every command was run in a real terminal on my Mac against a
+This is class session 13. The lecture material is in the course repo:
+[`session-13-storage-hpa-probes`](https://github.com/Nency-Ravaliya/devops-heros/tree/main/session-13-storage-hpa-probes).
+Every command was run in a real terminal on my Mac against a
 single-node minikube cluster, and every screenshot in this folder is that terminal.
 
-## Homework tasks → where they are
+## Homework tasks and where they are
 
 | Task | What was asked | Folder |
 |---|---|---|
@@ -31,7 +32,7 @@ single-node minikube cluster, and every screenshot in this folder is that termin
 └── README.md
 ```
 
-Each folder has a `screenshots/` directory, and its README walks through them in order.
+Each folder has a `screenshots/` directory, and its README goes through them in order.
 
 ## Environment
 
@@ -44,7 +45,7 @@ Each folder has a `screenshots/` directory, and its README walks through them in
   `kubectl port-forward`.
 - The probes demo ran in its own namespace (`probes-lab`) so it could run alongside the
   HPA demo in `default`. The mini project uses its own `production-webapp` namespace, as
-  the notes intend.
+  the notes say.
 
 ## Problems found in the lecture material
 
@@ -53,5 +54,5 @@ Each folder has a `screenshots/` directory, and its README walks through them in
 | `02-persistent-storage/pvc.yaml` | PVC bound to a new dynamically created volume instead of `student-pv` | `storageClassName: ""` on the claim ([details](01-kubernetes-volumes/README.md#problem-found-the-pvc-from-the-notes-did-not-bind-to-student-pv)) |
 | Probes "try breaking it" | `kubectl apply` of a changed probe is `Forbidden` because a Pod's spec is immutable | delete and recreate the Pod ([details](03-probes/README.md#problem-found-kubectl-apply-is-rejected)) |
 | Probes debugging | `wget` isn't in the `nginx:1.27` image | used `curl` |
-| HPA notes | metrics-server is enabled *after* the first `kubectl top`, which fails | kept the order to show the error, then enabled it |
+| HPA notes | metrics-server is enabled after the first `kubectl top`, which fails | kept the order to show the error, then enabled it |
 | Mini project | one load generator spread over 2 replicas peaks at 41%, under the 50% target, so nothing scales | added two more generators, as the "increase load" step suggests |

@@ -6,7 +6,7 @@
 Prometheus 3.5 in Docker Compose, scraping itself every 5 s. The notes do the queries in
 the web UI. I sent the same PromQL to the HTTP API with `curl` (piped through `jq` to
 make the JSON readable) and added one browser screenshot of the graph. After the
-lecture part comes an **addition** for the alerting part of the homework: a rules file,
+lecture part comes an addition for the alerting part of the homework: a rules file,
 a second target, and an alert going pending → firing → resolved.
 
 ```text
@@ -97,7 +97,7 @@ Prometheus used about 0.38 % of one core and 76.7 MiB of memory. The range query
 returns `[timestamp, value]` pairs every 15 s (74.8 MB → 80.6 MB). This is the "values
 over time" idea from the notes, and the data a graph is drawn from.
 
-**Browser screenshot** of the same memory series in the Prometheus UI (Query → Graph, 5 m):
+Browser screenshot of the same memory series in the Prometheus UI (Query → Graph, 5 m):
 
 ![browser: Prometheus graph](screenshots/browser-01-prometheus-graph_24BCS10244.png)
 
@@ -109,8 +109,6 @@ docker compose ps -a
 ```
 
 ![compose down](screenshots/05-compose-down_24BCS10244.png)
-
----
 
 ## Addition: an alerting rule that fires
 
@@ -141,7 +139,7 @@ docker compose ps
 
 ![alerting up](alerting/screenshots/01-alerting-up_24BCS10244.png)
 
-The rule says: if any target's `up` is 0 **for 30 s straight**, raise `TargetDown` with
+The rule says: if any target's `up` is 0 for 30 s straight, raise `TargetDown` with
 severity `critical`. The `for` part keeps a single failed scrape from raising the alert.
 
 ### Rule loaded, both targets healthy
@@ -169,7 +167,7 @@ curl -s http://localhost:9090/api/v1/alerts | jq '.data.alerts[] | {alert: .labe
 ![pending](alerting/screenshots/03-target-down-pending_24BCS10244.png)
 
 `up{job="node"}` dropped to `0` (the scrape of `node-exporter:9100` fails once the
-container is gone). The alert exists but is **pending**: the condition is true, and
+container is gone). The alert exists but is pending: the condition is true, and
 Prometheus is waiting out the 30 s `for` window from `activeAt` 19:00:48Z.
 
 ### 30 s later → firing
@@ -183,7 +181,7 @@ curl -s http://localhost:9090/api/v1/rules | jq -c '.data.groups[].rules[] | {na
 ![firing](alerting/screenshots/04-alert-firing_24BCS10244.png)
 
 Now `state: firing`, with the templated summary `node target node-exporter:9100 is down`.
-**Browser screenshot** of the Alerts page at the same moment:
+Browser screenshot of the Alerts page at the same moment:
 
 ![browser: alert firing](alerting/screenshots/browser-01-alert-firing_24BCS10244.png)
 
@@ -200,26 +198,26 @@ docker compose down
 ![resolved](alerting/screenshots/05-target-back-resolved_24BCS10244.png)
 
 Both targets are back to `1` and the alert list is empty again. This setup has no
-Alertmanager, so Prometheus only *evaluates* the rule. A real setup points Prometheus at
+Alertmanager, so Prometheus only evaluates the rule. A real setup points Prometheus at
 Alertmanager (`alerting.alertmanagers` in `prometheus.yml`), which groups alerts,
 silences them and sends them to Slack, e-mail or PagerDuty.
 
 ## Practice answers (from the notes)
 
-1. Prometheus collects **metrics** (numeric time series).
-2. A **scrape** is one HTTP `GET /metrics` to a target, whose result is stored with a timestamp.
-3. **`up`** is 1 if the last scrape of a target worked and 0 if it didn't. It is a basic
+1. Prometheus collects metrics (numeric time series).
+2. A scrape is one HTTP `GET /metrics` to a target, whose result is stored with a timestamp.
+3. `up` is 1 if the last scrape of a target worked and 0 if it didn't. It is a basic
    health signal for every target.
-4. **PromQL** is the query language: selecting series by name and labels, `rate()`, `sum()`, arithmetic.
-5. Prometheus is primarily a **metrics** system, not a log store.
+4. PromQL is the query language: selecting series by name and labels, `rate()`, `sum()`, arithmetic.
+5. Prometheus is primarily a metrics system, not a log store.
 
 ## What I understood
 
-- Prometheus **pulls**. Targets only expose `/metrics`, and Prometheus decides how often to
+- Prometheus pulls. Targets only expose `/metrics`, and Prometheus decides how often to
   scrape and keeps the history. If a scrape fails, that is a signal in itself (`up = 0`).
 - Counters need `rate()` before they mean anything. Gauges like memory can be read as they are.
-- An alert is just a PromQL expression plus a `for` duration. *Pending* means the
-  condition is true but not yet for long enough, and *firing* means it has stayed true.
+- An alert is just a PromQL expression plus a `for` duration. Pending means the
+  condition is true but not yet for long enough, and firing means it has stayed true.
   Prometheus decides when an alert fires, and Alertmanager decides who gets notified.
 - Everything the UI shows comes from the same HTTP API, so anything I can click I can
   also script with `curl`.

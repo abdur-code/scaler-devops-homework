@@ -3,8 +3,8 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-The whole Terraform lifecycle on the smallest possible example: **one S3 bucket**.
-Here I ran `apply` and `destroy` the way the notes show, typing `yes` at the prompt.
+This is the whole Terraform lifecycle on the smallest possible example, one S3 bucket.
+I ran `apply` and `destroy` the way the notes show, typing `yes` at the prompt.
 
 ```text
 init -> fmt -> validate -> plan -> apply -> output / state list -> destroy
@@ -21,15 +21,13 @@ init -> fmt -> validate -> plan -> apply -> output / state list -> destroy
 | `terraform state list` | lists the resources Terraform tracks |
 | `terraform destroy` | deletes everything in the state (also asks for `yes`) |
 
-**Changes to the lecture files** (both marked with a comment in the code):
+Changes to the lecture files (both marked with a comment in the code):
 
 - `bucket_prefix` was `session19-workflow-`. I changed it to
   `abdur-24bcs10244-s19-workflow-`, the naming convention I use for every bucket in this
-  account. AWS adds a unique suffix either way, so the original wouldn't have collided;
-  the change just makes the bucket obviously mine.
+  account. AWS adds a unique suffix either way, so the original wouldn't have collided.
+  The change just makes the bucket clearly mine.
 - `default_tags` in the provider block (Project / Session / Owner), same as in 06.
-
----
 
 ## init
 
@@ -53,7 +51,7 @@ terraform plan
 
 ![fmt validate plan](screenshots/02-fmt-validate-plan_24BCS10244.png)
 
-**`Plan: 1 to add`**, as in the notes. `bucket` is `(known after apply)` because only
+The plan said `Plan: 1 to add`, as in the notes. `bucket` is `(known after apply)` because only
 the prefix is fixed; the final name is generated when the bucket is created. The note at
 the bottom is Terraform saying that without `-out` there's no guarantee `apply` will do
 exactly this, since it plans again.
@@ -80,7 +78,7 @@ aws s3api get-bucket-tagging --bucket "$(terraform output -raw bucket_name)"
 
 ![output and state](screenshots/04-output-state_24BCS10244.png)
 
-**Small mismatch with the notes:** they show `aws_s3_bucket.demo` in `terraform state list`,
+Small mismatch with the notes: they show `aws_s3_bucket.demo` in `terraform state list`,
 but the resource in `main.tf` is called `workflow_demo`, so the real address is
 `aws_s3_bucket.workflow_demo`. Nothing to fix, the notes just use a different name.
 
@@ -102,7 +100,7 @@ Terraform refreshed the bucket, showed the plan (`1 to destroy`), asked
 bucket deletes without `force_destroy`. A bucket with objects in it would fail here, which
 is why I set `force_destroy = true` on the bucket in [09](../09-final-project/).
 
-**Added check:**
+Added check:
 
 ```bash
 terraform state list
@@ -112,8 +110,6 @@ aws s3api list-buckets --query "Buckets[?starts_with(Name,'abdur-24bcs10244-s19'
 ![after destroy](screenshots/06-after-destroy_24BCS10244.png)
 
 Empty state, and no bucket with my session prefix left in the account.
-
----
 
 ## Practice answers
 
@@ -126,11 +122,10 @@ Empty state, and no bucket with my session prefix left in the account.
 
 ## What I understood
 
-- `plan` and `apply` are separate on purpose: `plan` is the review, `apply` is the change.
-  Without a saved plan, `apply` re-plans and asks again, so the `yes` is the last chance to
-  read what is about to happen.
+- `plan` is the review and `apply` is the change. Without a saved plan, `apply` re-plans
+  and asks again, so the `yes` is the last chance to read what is about to happen.
 - `bucket_prefix` lets AWS pick a globally unique name, which avoids S3's "name already
-  taken" problem, but the name only exists after `apply`. `terraform output` is how
-  scripts get it back.
+  taken" problem, but the name only exists after `apply`. `terraform output` gives it
+  back to scripts.
 - `terraform state list` uses the resource's address (`type.name` from my code), not the
   AWS name. That address is what `state show`, `-replace` and `-target` take.

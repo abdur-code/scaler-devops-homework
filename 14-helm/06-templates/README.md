@@ -65,7 +65,7 @@ helm template my-release template-demo --set replicaCount=5 | grep "replicas:"
 
 ![--set](screenshots/04-template-set_24BCS10244.png)
 
-`replicas: 5`. The template stayed the same; only the input changed.
+This printed `replicas: 5`. The template stayed the same and only the input changed.
 
 ## 4. Addition: the conditional in action
 
@@ -80,7 +80,7 @@ helm template my-release template-demo --set service.enabled=null | grep "^kind:
 
 ![conditional](screenshots/05-conditional_24BCS10244.png)
 
-- default (`true`): Service **and** Deployment
+- default (`true`): Service and Deployment
 - `false`: only the Deployment. The whole Service block is skipped.
 - `null` (the key removed, as with the values from section 3 of the notes): also only the
   Deployment. A missing key counts as false in `if`, so a chart built from the notes'
@@ -90,10 +90,10 @@ helm template my-release template-demo --set service.enabled=null | grep "^kind:
 
 - Templates are rendered on my machine before anything goes to the cluster, so
   `helm template` shows exactly what would be applied.
-- `{{- if }}` lets one chart serve different setups (Service on or off, Ingress on or off)
+- `{{- if }}` lets one chart cover different setups (Service on or off, Ingress on or off)
   without keeping separate YAML files.
 - A missing value counts as false. That is convenient for optional features, but a typo in
-  a key name can quietly turn a feature off. That's why charts document every key in
-  `values.yaml`, even when it's off.
+  a key name can quietly turn a feature off, so charts document every key in `values.yaml`,
+  even when it's off.
 - The `-` in `{{-` trims the whitespace before the tag. Without it, the `if` and `end`
   lines would leave blank lines in the YAML.

@@ -16,7 +16,7 @@ desired replica count and commits again, so the history records who wanted what 
 └── screenshots/
 ```
 
-**Where I ran it.** This homework folder is itself inside my homework Git repository, so
+This homework folder is itself inside my homework Git repository, so
 running `git init` here would have created a nested repo. I ran the steps in a scratch copy
 of `gitops-repo/` outside the homework repo (the full path is visible in the first
 screenshot). I set a repo-local Git identity and added no remote, so nothing was pushed
@@ -82,27 +82,29 @@ git remote -v; echo "remotes: $(git remote | wc -l)"
 
 ![history](screenshots/04-history_24BCS10244.png)
 
-- **Who and when:** both commits by `abdur-code` on 2026-10-08. `git blame` points the
+- Who and when: both commits by `abdur-code` on 2026-10-08. `git blame` points the
   `replicas: 3` line at commit `f639b5c9`, at 00:40:44 IST.
-- **Rollback point:** `git show HEAD~1:…` still has `replicas: 2`. Going back is
+- Rollback point: `git show HEAD~1:…` still has `replicas: 2`. Going back is
   `git revert f639b5c`, which is a new commit, so even the rollback is recorded.
-- **Not pushed:** `remotes: 0`. In real GitOps this repo would be pushed to GitHub and
-  Argo CD would watch it. That is 07 (instructor's repo) and 08 (my own repo, pending).
+- Not pushed: `remotes: 0`. In real GitOps this repo would be pushed to GitHub and
+  Argo CD would watch it. That is 07 (instructor's repo) and 08 (my own repo, not created
+  yet).
 
 ## Practice (from the notes)
 
-Why is Git useful as a source of truth? I saw each of these in the steps above: **version
-history** (`git log`), **review** (the `git diff` before committing), **diff** (`-2 +3`),
-**auditability** (`git blame` names the author and time of the replica change),
-**collaboration** (a shared remote + pull requests), and a **rollback point**
+Why is Git useful as a source of truth? I saw each of these in the steps above: version
+history (`git log`), review (the `git diff` before committing), diff (`-2 +3`),
+auditability (`git blame` names the author and time of the replica change),
+collaboration (a shared remote and pull requests), and a rollback point
 (`HEAD~1` still has the old state).
 
 ## What I understood
 
-- Git stores the *desired* state, and Kubernetes holds the *actual* state. They are
-  different things, and Argo CD connects them.
+- Git stores the desired state and Kubernetes holds the actual state. Argo CD connects
+  the two.
 - Each change to the desired state is a commit, so the history of the system is the
   history of the repository: who, what, when and why (the message).
-- Rolling back is reverting a commit, not remembering which `kubectl` command to run.
+- Rolling back means reverting a commit, with no need to remember which `kubectl`
+  command to run.
 - A commit alone changes nothing in the cluster. Something has to read Git and apply it,
   and that is the controller's job in 07.

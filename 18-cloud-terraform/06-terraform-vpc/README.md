@@ -3,8 +3,8 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Terraform creates a VPC with one public subnet, an Internet Gateway, a public route table
-with its association, and a web security group. That's six resources and no EC2, so this
+In this lab Terraform creates a VPC with one public subnet, an Internet Gateway, a public route table
+with its association, and a web security group. That's six resources and no EC2, so the
 lab costs nothing. Everything was created in my AWS account (`ap-south-1`) and destroyed
 again at the end of the lab.
 
@@ -20,9 +20,9 @@ again at the end of the lab.
 └── screenshots/
 ```
 
-**My one change to the lecture code:** a `default_tags` block in the provider, so every
+My one change to the lecture code is a `default_tags` block in the provider, so every
 resource also gets `Project = scaler-devops-homework`, `Session = 19`, `Owner = 24BCS10244`.
-That's how I can prove at the end that nothing of mine is left in the account.
+I use these tags at the end to show that nothing of mine is left in the account.
 
 ```hcl
 provider "aws" {
@@ -38,8 +38,6 @@ provider "aws" {
 }
 ```
 
----
-
 ## Step 1-2: variables and `terraform init`
 
 ```bash
@@ -50,7 +48,7 @@ terraform init
 
 ![tfvars and init](screenshots/01-tfvars-init_24BCS10244.png)
 
-`init` found `hashicorp/aws` **v6.67.0** for the constraint `~> 6.0` and wrote
+`init` found `hashicorp/aws` v6.67.0 for the constraint `~> 6.0` and wrote
 `.terraform.lock.hcl` to pin that exact version.
 
 ## Step 3-4: `fmt` and `validate`
@@ -76,7 +74,7 @@ grep -E '^  # |^Plan:' logs/06-plan.log
 
 The full plan is over 200 lines, too long for one screenshot, so I show the end
 of it plus the list of resource headers. It says
-**`Plan: 6 to add, 0 to change, 0 to destroy`**, as the notes expect. In `tags_all` you can
+`Plan: 6 to add, 0 to change, 0 to destroy`, as the notes expect. In `tags_all` I can
 see my three default tags merged with the lecture's `Name`/`Session`/`ManagedBy` tags.
 
 I also saved the plan to a file (`-out=tfplan`). Applying a saved plan runs exactly what
@@ -91,12 +89,12 @@ terraform apply tfplan
 
 ![apply](screenshots/04-apply_24BCS10244.png)
 
-**`Apply complete! Resources: 6 added`.** The notes say "5 added" here, but the plan,
-the state and the destroy all say 6, so that line in the notes is a typo.
+The result was `Apply complete! Resources: 6 added`. The notes say "5 added" here, but the
+plan, the state and the destroy all say 6, so that line in the notes is a typo.
 
 The order shows Terraform working out dependencies from references: the VPC first, then
 the IGW, subnet and security group in parallel (they only need `aws_vpc.main.id`), then
-the route table (needs the IGW), and the association last (needs the subnet *and* the
+the route table (needs the IGW), and the association last (needs the subnet and the
 route table). The subnet took 11 s, so the association had to wait for it.
 
 ## Step 7-8: state and outputs
@@ -130,7 +128,7 @@ aws ec2 describe-route-tables \
 AWS reports the same IDs as `terraform output`: VPC `10.0.0.0/16`, subnet `10.0.1.0/24`
 in `ap-south-1a`, and the route table in my VPC.
 
-## Student exercise: change the CIDR, plan only
+## Exercise: change the CIDR, plan only
 
 The notes say to change the VPC to `10.10.0.0/16` and the subnet to `10.10.1.0/24`, then
 run `fmt`, `validate` and `plan`, but not apply. I did it while the VPC still existed, so
@@ -146,12 +144,12 @@ terraform plan -no-color | grep -E '^  # |forces replacement|^Plan:'
 
 ![exercise](screenshots/07-exercise-cidr-change_24BCS10244.png)
 
-**`Plan: 5 to add, 1 to change, 5 to destroy`.** A VPC's CIDR can't be changed in place,
-so the VPC `must be replaced`. That ripples down: the subnet, route table and security
-group all get a new `vpc_id` (`# forces replacement`), and the association gets a new
-`subnet_id`. The Internet Gateway is the only one "updated in-place", because an IGW can
-be detached from one VPC and attached to another. This is why the notes say not to apply
-blindly: a two-number edit would recreate almost the whole network.
+The plan said `Plan: 5 to add, 1 to change, 5 to destroy`. A VPC's CIDR can't be changed
+in place, so the VPC `must be replaced`. That carries down: the subnet, route table and
+security group all get a new `vpc_id` (`# forces replacement`), and the association gets a
+new `subnet_id`. The Internet Gateway is the only one "updated in-place", because an IGW
+can be detached from one VPC and attached to another. This is why the notes say not to
+apply blindly: a two-number edit would recreate almost the whole network.
 
 Then I put the original values back and confirmed nothing would change:
 
@@ -181,13 +179,13 @@ yes
 
 ![destroy](screenshots/10-destroy_24BCS10244.png)
 
-**`Destroy complete! Resources: 6 destroyed`**, matching the notes. The order is the
+`Destroy complete! Resources: 6 destroyed`, matching the notes. The order is the
 reverse of the apply: association and security group first, the VPC last. The `yes` shows
 up right under the command because the output goes through `tee | tail`. The terminal
 echoes what I type straight away, but `tail` only prints the prompt and the result once
 Terraform has finished.
 
-**Added check (not in the notes):** state and AWS are both empty.
+Added check (not in the notes): state and AWS are both empty.
 
 ```bash
 terraform state list
@@ -197,15 +195,13 @@ aws ec2 describe-vpcs --filters "Name=tag:Name,Values=session19-vpc" --query 'Vp
 
 ![after destroy](screenshots/11-after-destroy_24BCS10244.png)
 
----
-
 ## What I understood
 
 - Terraform builds a dependency graph from references like `aws_vpc.main.id`, so I never
   wrote the creation order myself, and destroy simply runs it backwards.
 - `plan` is the safety net. It showed that one CIDR edit means "destroy and recreate
-  five resources", which I'd never guess from the diff of `main.tf`.
+  five resources", which I wouldn't have guessed from the diff of `main.tf`.
 - The state file is how Terraform knows which real IDs belong to this folder. After the
   destroy it's empty, and `terraform output` has nothing left to show.
-- Notes can be wrong in small ways ("5 added"). The plan summary and the state list are
-  what to trust.
+- The notes were wrong in a small way ("5 added"), and the plan summary and the state
+  list had the right number.

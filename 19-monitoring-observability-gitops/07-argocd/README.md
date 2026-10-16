@@ -8,10 +8,10 @@ Argo CD is installed in the cluster and pointed at the instructor's public repo
 whatever is in that repo's `app/` folder into namespace `session20` and keeps it that way.
 I followed the steps in order with three differences:
 
-- **Cluster:** my existing minikube instead of `kind create cluster --name session20`.
-- **Ports:** Argo CD on local **18200** (notes: 8080) and the app on **18201** (notes:
+- Cluster: my existing minikube instead of `kind create cluster --name session20`.
+- Ports: Argo CD on local 18200 (notes: 8080) and the app on 18201 (notes:
   9090, which Prometheus uses in 03).
-- **Step 7 (git push):** not possible, because the repo belongs to the instructor and I
+- Step 7 (git push): not possible, because the repo belongs to the instructor and I
   only read it. Instead I show the reconciliation loop without a push: I changed the
   cluster by hand and Argo CD put it back (self-heal).
 
@@ -56,7 +56,7 @@ kubectl get pods -n argocd -w
 ![wait for pods](screenshots/03-wait-pods_24BCS10244.png)
 
 All 7 Pods went from `ContainerCreating`/`Init` to `1/1 Running` in about 80 s (I stopped
-the watch after 150 s). The notes predicted 2–5 minutes, but the images were small enough
+the watch after 150 s). The notes predicted 2 to 5 minutes, but the images were small enough
 to pull quickly.
 
 ## Step 3: Access Argo CD (port 18200 instead of 8080)
@@ -79,7 +79,7 @@ curl -sk https://localhost:18200/api/v1/session -H 'Content-Type: application/js
 
 The first command prints the generated admin password. It is visible here because this was
 a throwaway local install that has since been deleted. Instead of opening the UI in a
-browser, I used the API the UI is built on: the server is Argo CD **v3.5.4**, and logging in
+browser, I used the API the UI is built on: the server is Argo CD v3.5.4, and logging in
 as `admin` with that password returns a session token (`login_ok: true`), the same thing
 the UI login form does. `-k` is needed because Argo CD serves a self-signed certificate,
 which is the "Advanced → Proceed" warning the notes mention.
@@ -113,7 +113,7 @@ Within seconds Argo CD created namespace `session20`, the Deployment (`5/5`, sin
 repo says `replicas: 5`) and the Service, and reports `Synced` / `Healthy`. The synced
 revision `5c2c67f…` is the current `main` of the instructor's repo, so the cluster matches
 a specific commit. The resource list has a third entry I didn't expect,
-`Application/session20-app (argocd)`. The repo keeps `argocd-application.yaml` *inside*
+`Application/session20-app (argocd)`. The repo keeps `argocd-application.yaml` inside
 `app/`, so Argo CD also manages its own Application object. This caused the second problem
 at the end.
 
@@ -140,12 +140,12 @@ The notes edit `app/deployment.yaml` in the repo, commit, `git push`, and watch 
 scale the Pods. I can't push to `Nency-Ravaliya/gitops-demo` (it isn't my repo), so I did
 not do this step. In that flow, Argo CD would notice the new commit on its next poll
 (every 3 minutes), see `Desired = 2, Actual = 5`, and scale the Deployment. The same flow
-on my own repo is prepared in [08](../08-mini-project/README.md) and listed as pending
-there.
+on my own repo is prepared in [08](../08-mini-project/README.md), but I have not done it
+there yet.
 
 ### GitOps without a push: self-heal
 
-What I *can* show is the other half of the loop. The Application has `selfHeal: true`, so
+What I can show is the other half of the loop. The Application has `selfHeal: true`, so
 if the cluster drifts away from Git, Argo CD puts it back. I scaled the Deployment by hand:
 
 ```bash
@@ -186,8 +186,8 @@ needed, because automated sync and self-heal both worked.
 
 ### Problem found: deleting the Application does not delete the app
 
-The notes say `kubectl delete -f app/argocd-application.yaml` *"also removes your app from
-the cluster"*. As written:
+The notes say `kubectl delete -f app/argocd-application.yaml` "also removes your app from
+the cluster". As written:
 
 ```bash
 kubectl delete -f app/argocd-application.yaml
@@ -201,13 +201,13 @@ kubectl get all -n session20
 The Application is gone, but the Deployment, its 5 Pods and the Service are still running.
 Three Pods are 100 s old: they are the ones self-heal created.
 
-**Root cause.** Argo CD only deletes an Application's resources (a *cascading* delete) if
-the Application carries the finalizer `resources-finalizer.argocd.argoproj.io`. Without
-it, deleting the Application just removes the Argo CD object, and Kubernetes knows nothing
-about the link. The Argo CD UI and `argocd app delete` add that finalizer for you, but a
-plain `kubectl delete` doesn't.
+The root cause is that Argo CD only deletes an Application's resources (a cascading
+delete) if the Application carries the finalizer `resources-finalizer.argocd.argoproj.io`.
+Without it, deleting the Application just removes the Argo CD object, and Kubernetes
+knows nothing about the link. The Argo CD UI and `argocd app delete` add that finalizer
+automatically, but a plain `kubectl delete` doesn't.
 
-**Fix.** Add the finalizer to our copy of the file:
+The fix is to add the finalizer to my copy of the file:
 
 ```yaml
 metadata:
@@ -230,17 +230,17 @@ kubectl get application session20-app -n argocd -o jsonpath='{.metadata.finalize
 ### Second problem: the Application manages itself
 
 The Application came back `Synced`/`Healthy` and adopted the running Deployment, but the
-finalizer I just applied was **gone** (the last command prints an empty line).
+finalizer I just applied was gone (the last command prints an empty line).
 
-**Root cause.** This is the extra `Application/session20-app` resource from Step 5. The
-instructor's repo has `argocd-application.yaml` *inside* `app/`, the path the Application
+The root cause is the extra `Application/session20-app` resource from Step 5. The
+instructor's repo has `argocd-application.yaml` inside `app/`, the path the Application
 watches. On its first sync Argo CD applied the Git copy of the Application over mine (the
 sync result for it was `application.argoproj.io/session20-app configured`), and the Git
-copy has no finalizer. The file's own first line says *"do not put it under the Git source
-path"*, and this is the reason. Git always wins, including over local fixes to the
+copy has no finalizer. The file's own first line says "do not put it under the Git source
+path", and this is the reason. Git always wins, including over local fixes to the
 Application.
 
-**Fix.** I can't move the file in someone else's repo, so in our copy I tell Argo CD not to
+The fix: I can't move the file in someone else's repo, so in my copy I tell Argo CD not to
 render it:
 
 ```yaml
@@ -284,13 +284,13 @@ was removed in the [final cleanup](../README.md#final-cleanup).
 
 ## What I understood
 
-- An Argo CD `Application` is the only thing I apply by hand. It says *which repo, which
-  path, which revision* goes to *which cluster and namespace*. Argo CD does the rest and
+- An Argo CD `Application` is the only thing I apply by hand. It says which repo, which
+  path and which revision go to which cluster and namespace. Argo CD does the rest and
   reports `Synced/OutOfSync` and `Healthy/Degraded`.
 - Reconciliation runs in both directions. A new commit changes the desired state (polled
   every 3 min), and a manual change to the cluster is detected immediately and reverted
   when `selfHeal` is on. I saw the second one happen in about a second.
-- Git really is the source of truth, even for the Application object itself. That is why
+- Git is the source of truth, even for the Application object itself. That is why
   my local fix disappeared until I excluded the file from the watched path.
-- Deleting an Application is not the same as deleting the app. You need the resources
-  finalizer, or the UI/CLI, for a cascading delete.
+- Deleting an Application only deletes the app if the resources finalizer is set, or if
+  the delete goes through the UI/CLI. That gives a cascading delete.

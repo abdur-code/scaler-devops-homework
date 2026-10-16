@@ -41,9 +41,9 @@ cat terraform.tfvars
 
 ![tfvars](screenshots/01-tfvars_24BCS10244.png)
 
-The notes say "edit if required". I changed `project_name` from `student-project` to
+The notes say "edit if required", so I changed `project_name` from `student-project` to
 `abdur-24bcs10244-s18-05` so that the generated prefix follows my bucket naming
-convention. (`sed -i ''` is the macOS/BSD form of in-place editing.)
+convention. `sed -i ''` is the macOS/BSD form of in-place editing.
 
 ## 2. Init, format, validate
 
@@ -63,14 +63,14 @@ terraform plan
 
 ![plan](screenshots/03-plan_24BCS10244.png)
 
-"You should see a resource using your variable values": the plan shows
+The notes expect a resource that uses the variable values, and the plan shows
 `bucket_prefix = "abdur-24bcs10244-s18-05-dev-"` and the tags `Environment = "dev"`,
 `Project = "abdur-24bcs10244-s18-05"`. Every value came from `terraform.tfvars`, none
 from `main.tf`.
 
 In `tags_all` the resource's `Project` tag (from the variable) overrides the provider
 `default_tags` value `scaler-devops-homework`, just like in
-[04](../04-resources/README.md#6-exercise-add-tags-fmt-plan). That doesn't matter here,
+[04](../04-resources/README.md#6-exercise-add-tags-fmt-plan). That does not matter here,
 because this folder is plan-only (next section).
 
 ## 4. Exercise: `environment = "test"`
@@ -104,27 +104,26 @@ aws s3api list-buckets --query "Buckets[?starts_with(Name, 'abdur-24bcs10244-s18
 No state file exists ("No state file was found!") and AWS has no bucket with this
 folder's prefix (`[]`).
 
-**About keeping `terraform.tfvars`.** The notes recommend adding `terraform.tfvars` to
-`.gitignore` in real projects because it often holds secrets. Mine contains only a
-region, an environment name and a project name, so I kept it as part of the homework;
-the folder's `.gitignore` still covers state, plans and `.terraform/`. It is left at
-`environment = "test"` from the exercise.
+About keeping `terraform.tfvars`: the notes recommend adding `terraform.tfvars` to
+`.gitignore` in real projects because it often holds secrets. Mine contains only a region, an environment
+name and a project name, so I kept it as part of the homework. The folder's `.gitignore`
+still covers state, plans and `.terraform/`. The file is left at `environment = "test"`
+from the exercise.
 
 ## Practice question
 
-**Why does changing a variable change the desired infrastructure configuration?**
+Why does changing a variable change the desired infrastructure configuration?
 Terraform evaluates every expression before planning. `bucket_prefix` and the tags are
 expressions that depend on `var.environment`, so a new value produces a different
 desired state. The plan is then the difference between that desired state and what
 state says exists. Here nothing existed, so it is still "1 to add", just with different
 values. If the dev bucket had been applied, changing `bucket_prefix` would force a
-**replacement** (destroy and recreate), because a bucket's name can't be changed in
-place.
+replacement (destroy and recreate), because a bucket's name cannot be changed in place.
 
 ## What I understood
 
-- Variables separate *what is the same* (the code) from *what differs per environment*
+- Variables keep what is the same (the code) apart from what differs per environment
   (the tfvars file).
-- A `.tfvars` file is just input; secrets in it would be committed along with the code,
+- A `.tfvars` file is just input. Secrets in it would be committed along with the code,
   so real secrets belong in a secret manager or `TF_VAR_` environment variables.
-- `plan` is free and safe: it called AWS only to read, and created nothing.
+- `plan` is free and safe, because it called AWS only to read and created nothing.

@@ -3,12 +3,10 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Session 14, Task 1. `kubectl get` is the first command in every investigation. It answers
-"what is happening right now?" but not "why".
+Session 14, Task 1. `kubectl get` is the first command in every investigation. It shows
+what is happening right now but doesn't say why.
 
 Files: `pod.yaml` (an `nginx:1.27` Pod called `get-demo`, copied from the lecture).
-
----
 
 ## 0. Create my namespace
 
@@ -37,7 +35,7 @@ kubectl get pods
 ![apply and get](screenshots/02-apply-get-pods_24BCS10244.png)
 
 `READY 1/1`, `STATUS Running`, `RESTARTS 0`: one container, started, never restarted.
-I added `kubectl wait` so the screenshot wasn't taken while the Pod was still
+I added `kubectl wait` so the screenshot wouldn't be taken while the Pod was still
 `ContainerCreating`.
 
 | Column | Meaning |
@@ -56,7 +54,7 @@ kubectl get pods -o wide
 
 ![get -o wide](screenshots/03-get-pods-wide_24BCS10244.png)
 
-`-o wide` adds the Pod IP (`10.244.0.70`) and the node (`minikube`). That matters later:
+`-o wide` adds the Pod IP (`10.244.0.70`) and the node (`minikube`). Both come up later:
 a Pod with `NODE <none>` was never scheduled (section 08), and the Pod IP is what a
 Service's endpoints point to (section 09).
 
@@ -77,7 +75,7 @@ cluster-wide and shows the single `minikube` node (control-plane, `v1.37.0`).
 ## 4. Watch a change live
 
 The lecture says to run `kubectl get pods -w` and delete the Pod "from another
-terminal". I did exactly that with two Terminal windows.
+terminal", so I used two Terminal windows.
 
 ```bash
 # window 1
@@ -92,15 +90,13 @@ kubectl get pods
 
 The watch printed a new line for every state change: `Running` → `Terminating` →
 `Completed` (nginx exited cleanly on SIGTERM), and then the Pod was gone. The second window
-confirms there are no Pods left.
-
----
+shows no Pods left.
 
 ## What I understood
 
-- `kubectl get` is the quick overview: STATUS, READY and RESTARTS show *that* something
-  is wrong, not *why*.
+- `kubectl get` is the quick overview. STATUS, READY and RESTARTS show that something
+  is wrong, but not why.
 - `-o wide` adds the IP and node, which I needed for networking and scheduling problems.
-- `-w` streams changes instead of making me re-run the command, which is handy for
-  watching restarts or image pulls happen.
-- After `get` comes `describe`, `logs` and events, which explain the "why".
+- `-w` streams changes so I don't have to re-run the command, which helps for watching
+  restarts or image pulls happen.
+- `describe`, `logs` and events come after `get` and explain the cause.

@@ -1,10 +1,10 @@
-# 02 - Terraform Architecture
+# 02 - Terraform architecture
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Terraform sits between my configuration and the cloud API. It never talks to AWS
-itself; a provider plugin does.
+Terraform sits between my configuration and the cloud API. It does not talk to AWS
+itself, a provider plugin does.
 
 ```text
    main.tf (HCL)            terraform.tfstate
@@ -33,13 +33,13 @@ itself; a provider plugin does.
 | Resource | one managed object | `aws_s3_bucket.architecture_demo` |
 | State | Terraform's record of what it created | `terraform.tfstate` |
 
-A plan is built from three inputs: **configuration + state + the real world** (Terraform
-refreshes state from AWS before planning). Terraform is **declarative**: I describe what
-I want (one bucket with this prefix and these tags), not the API calls needed to get
-there.
+A plan is built from three inputs: the configuration, the state and the real
+infrastructure (Terraform refreshes state from AWS before planning). Terraform is
+declarative, so I describe what I want (one bucket with this prefix and these tags) and
+it works out the API calls.
 
 `main.tf` is the lecture file with my bucket prefix (`abdur-24bcs10244-s18-02-arch-`)
-and the provider `default_tags`, both commented. A `.gitignore` was added because the
+and the provider `default_tags`, both commented. I added a `.gitignore` because the
 lecture folder had none.
 
 ## 1. Init, format, validate
@@ -54,9 +54,9 @@ terraform validate
 
 Same provider as in 01 (v6.67.0). Because `TF_PLUGIN_CACHE_DIR` is set in my terminal,
 `.terraform/providers/...` is only a link to the copy downloaded once, not another
-~750 MB copy of the provider. `fmt` has nothing to change and `validate` passes. (`terraform fmt` and
-`terraform validate` show up once mid-output because I typed them while init was still
-running; they ran afterwards, as the prompts below show.)
+~750 MB copy of the provider. `fmt` has nothing to change and `validate` passes.
+`terraform fmt` and `terraform validate` show up once mid-output because I typed them
+while init was still running. They ran afterwards, as the prompts below show.
 
 ## 2. Plan
 
@@ -67,7 +67,7 @@ terraform plan
 ![plan](screenshots/02-plan_24BCS10244.png)
 
 `Plan: 1 to add, 0 to change, 0 to destroy.` The output `bucket_arn` is
-`(known after apply)` because the name isn't decided until AWS creates the bucket.
+`(known after apply)` because the name is not decided until AWS creates the bucket.
 
 ## 3. Apply
 
@@ -110,10 +110,10 @@ terraform state list
 
 ## What I understood
 
-- The CLI is generic; all AWS knowledge lives in the provider plugin, which is why the
-  same workflow works for Azure, GCP, Kubernetes or GitHub.
-- State is what lets Terraform know that `aws_s3_bucket.architecture_demo` *is* the
-  bucket `abdur-24bcs10244-s18-02-arch-9d5b…`. Without it, Terraform would try to create
-  a second bucket.
-- Declarative means I only change the description; Terraform works out whether that
+- The CLI is generic and all AWS knowledge lives in the provider plugin, so the same
+  workflow works for Azure, GCP, Kubernetes or GitHub.
+- State is what lets Terraform know that `aws_s3_bucket.architecture_demo` is the bucket
+  `abdur-24bcs10244-s18-02-arch-9d5b…`. Without it, Terraform would try to create a
+  second bucket.
+- Declarative means I only change the description, and Terraform works out whether that
   means create, update, replace or delete.

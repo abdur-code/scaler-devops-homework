@@ -1,15 +1,13 @@
-# Docker Multi-Stage Build
+# Docker multi-stage build
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
-
----
 
 ## Task 1: Run the multi-stage Dockerfile
 
 ### Where it came from
 
-The multi-stage Dockerfile is the one from the class repo:
+The multi-stage Dockerfile comes from the class repo:
 
 ```bash
 git clone https://github.com/Nency-Ravaliya/devops-heros.git
@@ -17,9 +15,9 @@ cd devops-heros/session6-7-docker/multi-stage-dockerfile
 ```
 
 I copied that folder into this repo as [hello-multistage/](hello-multistage/) so the
-submission is self-contained. It has `Dockerfile`, `package.json` and `server.js`. I
-also added `Dockerfile.singlestage`, which is the same app built the ordinary way, so
-the two image sizes can be compared — that is mine, not from the class repo.
+submission is self-contained. It has `Dockerfile`, `package.json` and `server.js`. I also
+added `Dockerfile.singlestage`, which builds the same app the ordinary way so I could
+compare the two image sizes. That file is mine and is not from the class repo.
 
 ### The app
 
@@ -58,17 +56,16 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-Two `FROM` lines means two stages. Each `FROM` starts a **fresh filesystem**, so nothing
-from `builder` exists in `production` unless it is explicitly copied across with
-`COPY --from=builder`.
+Two `FROM` lines means two stages. Each `FROM` starts a fresh filesystem, so nothing from
+`builder` exists in `production` unless it is copied across with `COPY --from=builder`.
 
 - `builder` installs everything, dev dependencies included, and copies the whole source
   tree in.
 - `production` starts clean, brings over only `package*.json` and `server.js`, and
   installs with `--omit=dev` so dev dependencies are left out.
 
-Only the **last** stage becomes the image you ship. Whatever is left in `builder` — the
-source tree, npm's cache, any dev tooling — is discarded.
+Only the last stage becomes the final image. Whatever is left in `builder` (the source
+tree, npm's cache, any dev tooling) is discarded.
 
 ### Build the image
 
@@ -106,8 +103,8 @@ CONTAINER ID   IMAGE              STATUS         PORTS                          
 25b29e6ceb13   multistage-hello   Up 4 seconds   0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp   multistage-app
 ```
 
-The `PORTS` column reads `0.0.0.0:8080->3000/tcp`, which confirms the app is published
-on **port 8080** on the host.
+The `PORTS` column reads `0.0.0.0:8080->3000/tcp`, which confirms the app is published on
+port 8080 on the host.
 
 ### Access the application
 
@@ -126,10 +123,8 @@ $ curl http://localhost:8080
 <h1>Hello World from Docker Multi-Stage Build!</h1>
 ```
 
-The page shows **Hello World from Docker Multi-Stage Build**, which is what the task
-asked for. `X-Powered-By: Express` confirms it is the Express app answering.
-
----
+The page shows "Hello World from Docker Multi-Stage Build", which is what the task asked
+for. `X-Powered-By: Express` shows it is the Express app answering.
 
 ## Task 2: Documentation
 
@@ -152,7 +147,7 @@ CONTAINER ID   IMAGE              COMMAND                  CREATED         STATU
 25b29e6ceb13   multistage-hello   "docker-entrypoint.s…"   3 seconds ago   Up 3 seconds   0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp   multistage-app
 ```
 
-### Does the multi-stage build actually save anything here?
+### Does the multi-stage build save anything here?
 
 I built the same app both ways to find out:
 
@@ -164,10 +159,8 @@ multistage-hello    latest    243MB
 singlestage-hello   latest    249MB
 ```
 
-**Only 6 MB saved.** That is an honest result and worth explaining rather than hiding.
-
-The reason is that this app has nothing to throw away. Express has no dev dependencies,
-and there is no compile step, so `--omit=dev` removes nothing:
+It saved only 6 MB. The reason is that this app has nothing to throw away. Express has no
+dev dependencies and there is no compile step, so `--omit=dev` removes nothing:
 
 ```text
 $ docker run --rm multistage-hello  sh -c "ls node_modules | wc -l"
@@ -176,10 +169,10 @@ $ docker run --rm singlestage-hello sh -c "ls node_modules | wc -l"
 65
 ```
 
-Identical. The 6 MB is just the source files and npm metadata that the single-stage
-image still carries.
+Both have 65 packages. The 6 MB is the source files and npm metadata that the
+single-stage image still carries.
 
-What is actually inside the final stage:
+This is what is inside the final stage:
 
 ```text
 $ docker run --rm multistage-hello ls -la /app
@@ -201,11 +194,10 @@ SIZE      CREATED BY
 ```
 
 Only four small layers sit on top of the `node:24-alpine` base. The base image itself is
-the 230-odd MB, which no amount of staging can remove — the only way down from there is
-a smaller base or a runtime that is not Node.
+the 230-odd MB, which staging cannot remove. Getting lower would need a smaller base or a
+runtime that is not Node.
 
-**Where multi-stage really pays off** is when the build step produces something
-*different* from its input:
+Multi-stage pays off when the build step produces something different from its input:
 
 | Case | Single stage | Multi stage | Why |
 |---|---|---|---|
@@ -213,15 +205,12 @@ a smaller base or a runtime that is not Node.
 | React app (see [../05-docker-hello-world/](../05-docker-hello-world/)) | 228 MB | 76.1 MB | 39.6 MB of `node_modules` produces 156 KB of static files; only those ship |
 | Java app (same folder) | 555 MB | 286 MB | JDK needed to compile, JRE enough to run |
 
-So the lesson is not "multi-stage always shrinks the image". It is "multi-stage lets you
-throw away the build toolchain, and that only matters when there is a toolchain to throw
-away."
-
----
+So multi-stage does not always shrink the image. It lets me throw away the build
+toolchain, which only helps when there is a toolchain to throw away.
 
 ## Task 3: Deploying three different types of application
 
-Three applications of genuinely different types, all from
+Three different types of application, all from
 [../05-docker-hello-world/](../05-docker-hello-world/):
 
 ```bash
@@ -263,13 +252,10 @@ Java                         http://localhost:8103  -> 200
 Browser screenshots for these three are in
 [../05-docker-hello-world/screenshots/](../05-docker-hello-world/screenshots/).
 
-Note on ports: 8080 is taken by the multi-stage app, so the three apps stay on their
-81xx host ports from the previous task. Only the host side of each mapping differs; the
-apps still listen on 3000, 8000 and 8080 inside their own containers, and two containers
-can both use 8080 internally without clashing because each has its own network
-namespace.
-
----
+About ports: 8080 is taken by the multi-stage app, so the three apps stay on their 81xx
+host ports from the previous task. Only the host side of each mapping differs. The apps
+still listen on 3000, 8000 and 8080 inside their own containers, and two containers can
+both use 8080 internally because each has its own network namespace.
 
 ## Cleanup
 
@@ -278,22 +264,20 @@ docker rm -f multistage-app hw-node hw-python hw-java
 docker rmi multistage-hello singlestage-hello
 ```
 
----
-
 ## What I understood
 
-A multi-stage Dockerfile is several `FROM` lines in one file. Each one starts a new
-stage with a clean filesystem, `COPY --from=<stage>` pulls specific paths out of an
-earlier stage, and only the final stage becomes the image.
+A multi-stage Dockerfile is several `FROM` lines in one file. Each one starts a new stage
+with a clean filesystem, `COPY --from=<stage>` pulls specific paths out of an earlier
+stage, and only the final stage becomes the image.
 
-The reason to bother is that **the tools you need to build software are usually not the
-tools you need to run it**. A compiler, a package manager with dev dependencies, and the
-source tree are all build-time things. Leaving them in the shipped image makes it bigger
-to store and pull, and gives anyone who breaks into the container more to work with.
+The tools needed to build software are usually not the ones needed to run it. A compiler,
+a package manager with dev dependencies and the source tree are all build-time things.
+Leaving them in the shipped image makes it bigger to store and pull, and gives anyone who
+breaks into the container more to work with.
 
 `--target` is useful while developing: `docker build --target builder ...` stops after
-that stage, so you can shell into it and see what the build actually produced.
+that stage, so I can open a shell in it and see what the build produced.
 
-`EXPOSE` is documentation only. What made the app reachable on 8080 was `-p 8080:3000`
-on `docker run`, which reads `host:container`. That is also how the app listens on 3000
+`EXPOSE` is documentation only. What made the app reachable on 8080 was `-p 8080:3000` on
+`docker run`, which reads `host:container`. That is also how the app listens on 3000
 internally and is served on 8080 outside.

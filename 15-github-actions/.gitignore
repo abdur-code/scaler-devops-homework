@@ -1,4 +1,4 @@
-# generated while running the lecture commands locally
+# generated when I ran the lecture commands locally
 build/
 __pycache__/
 *.pyc

@@ -1,9 +1,9 @@
-# Shell Scripting: System Information Script
+# Shell scripting: system information script
 
 [`sysinfo.sh`](sysinfo.sh) prints a summary of the machine, asks where to save a report,
 then writes the full process list to a file.
 
-## What the task asked for, and where it is in the script
+## What the task asked for and where it is in the script
 
 | Requirement | How it is done |
 |---|---|
@@ -18,7 +18,7 @@ then writes the full process list to a file.
 | Create a file with `touch` | `touch "$REPORT_DIR/$REPORT_FILE"` |
 | Store processes with `>` | `ps aux > "$REPORT_DIR/$REPORT_FILE"` |
 
-`echo` is used throughout for the headings.
+I used `echo` for the headings.
 
 ## The script
 
@@ -78,8 +78,8 @@ At the two prompts I pressed Enter to accept the defaults, `system-report` and
 
 ## Output
 
-The disk usage and process sections are trimmed here so the file stays readable. The
-script prints the full lists.
+I trimmed the disk usage and process sections here to keep the file short. The script
+prints the full lists.
 
 ```text
 ====================================
@@ -137,29 +137,29 @@ $ wc -l system-report/processes.txt
 
 628 lines, which is 627 processes plus the header row. The count the script prints
 subtracts the header. `system-report/` is in `.gitignore` because it is generated
-output, not source.
+output and not source.
 
 ## Notes on the choices I made
 
-**`mkdir -p` rather than plain `mkdir`.** Without `-p` a second run fails with
+I used `mkdir -p` and not plain `mkdir`. Without `-p` a second run fails with
 `File exists` and the script stops. With it, re-running is safe.
 
-**Every variable is quoted**, as in `"$REPORT_DIR/$REPORT_FILE"`. Without the quotes a
+Every variable is quoted, as in `"$REPORT_DIR/$REPORT_FILE"`. Without the quotes a
 directory name containing a space would be split into two arguments and `mkdir` would
 silently create two directories.
 
-**`${REPORT_DIR:-system-report}`** supplies a default if the user just presses Enter.
+`${REPORT_DIR:-system-report}` supplies a default if the user just presses Enter.
 Without it, an empty answer would produce paths like `/processes.txt`.
 
-**Two different `ps` calls on purpose.** `ps -eo pid,user,%cpu,%mem,comm` is narrow
-enough to read on screen; `ps aux` prints full command lines that wrap badly in a
-terminal but are exactly what you want in a saved report. So the short form goes to the
-screen and the full form goes to the file.
+There are two different `ps` calls on purpose. `ps -eo pid,user,%cpu,%mem,comm` is
+narrow enough to read on screen. `ps aux` prints full command lines that wrap badly in
+a terminal but are fine in a saved report. So the short form goes to the screen and the
+full form goes to the file.
 
-**`touch` before the redirect is technically redundant**, because `>` creates the file
-anyway. It is in there because the task asked for `touch`, and it does make the
-intention obvious: create the file, then fill it.
+`touch` before the redirect is redundant, because `>` creates the file anyway. I kept
+it because the task asked for `touch`, and it shows the intention: create the file,
+then fill it.
 
-**Ran on macOS**, so the output shows APFS volumes and Apple process names. The same
-script runs unchanged on Linux; only the output differs, for example `df -h` there
-shows `/dev/sda1` style filesystems and no `iused`/`ifree` columns.
+I ran it on macOS, so the output shows APFS volumes and Apple process names. The same
+script should run on Linux with different output, for example `df -h` there shows
+`/dev/sda1` style filesystems and no `iused`/`ifree` columns.

@@ -3,16 +3,16 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-This session connects cloud basics (service models, regions and AZs, VPCs, subnets, route
-tables, internet gateways, security groups) with Terraform. I read the concepts against my
-real AWS account using the read-only `aws ec2 describe-*` commands from the notes, then
+This session covers cloud basics (service models, regions and AZs, VPCs, subnets, route
+tables, internet gateways, security groups) and then Terraform. I looked at the concepts in
+my real AWS account with the read-only `aws ec2 describe-*` commands from the notes, then
 ran the three Terraform labs from the lecture (a VPC, the init-to-destroy workflow on an S3
 bucket, and the mini project). For the homework's end-to-end project I extended the mini
 project with an EC2 web server and an S3 bucket (folder 09). Every apply ended with a
-`terraform destroy` and a check that nothing was left. All screenshots are my own
+`terraform destroy` and a check that nothing was left. All screenshots are from my own
 terminal on my Mac, against AWS region `ap-south-1`.
 
-## Homework task -> where to find it
+## Where each homework task is covered
 
 | Homework asks for | Where |
 |---|---|
@@ -97,35 +97,35 @@ terraform plan -destroy             # preview the destroy (06, 08)
 terraform destroy                   # delete everything in the state, with yes (all labs)
 ```
 
-## Environment note
+## Environment notes
 
-- **AWS:** account `187004426521`, IAM user `homework-terraform`, region **`ap-south-1`**
+- AWS: account `187004426521`, IAM user `homework-terraform`, region `ap-south-1`
   only. Credentials come from the AWS CLI's default profile. I never ran `aws configure` on
   screen (it would prompt for keys) and no keys appear in any file or screenshot.
-- **Tools:** Terraform v1.16.5, AWS provider v6.67.0, AWS CLI 2.34.48 on macOS (Apple
+- Tools: Terraform v1.16.5, AWS provider v6.67.0, AWS CLI 2.34.48 on macOS (Apple
   Silicon).
-- **Provider cache:** every terminal had `TF_PLUGIN_CACHE_DIR` set, so the ~700 MB AWS
+- Provider cache: every terminal had `TF_PLUGIN_CACHE_DIR` set, so the ~700 MB AWS
   provider was downloaded once and shared by all four Terraform folders instead of once per
   folder. `.terraform/` directories were deleted at the end.
-- **AWS CLI pager:** the terminal had `AWS_PAGER=""`, so CLI output prints directly
+- AWS CLI pager: the terminal had `AWS_PAGER=""`, so CLI output prints directly
   instead of opening in `less`.
-- **Tags:** I added a `default_tags` block to every provider, so every resource got
+- Tags: I added a `default_tags` block to every provider, so every resource got
   `Project = scaler-devops-homework`, `Session = 19`, `Owner = 24BCS10244` on top of the
   lecture's own tags. That is what the cleanup check below filters on.
-- **Bucket names:** all follow `abdur-24bcs10244-s19-<purpose>`. I didn't use the lecture's
+- Bucket names: all follow `abdur-24bcs10244-s19-<purpose>`. I didn't use the lecture's
   `session19-workflow-` prefix (see 07).
-- **One VPC at a time:** other sessions of this homework were using the same account,
+- One VPC at a time: other sessions of this homework were using the same account,
   and AWS allows 5 VPCs per region. I destroyed 06 before applying 08, and 08 before 09.
-- **Kubernetes / ports:** this session doesn't use minikube, so no namespace or local port
+- Kubernetes and ports: this session doesn't use minikube, so no namespace or local port
   was involved.
-- **Long output:** Terraform plans here are 200-400 lines. For those I ran
-  `-no-color | tee logs/<name>.log | tail` (or `grep` for the resource list). The
-  screenshot shows the important end. When I typed `yes` into
-  a piped `destroy`, the terminal echoes it right under the command, because `tail` only
-  prints the prompt after Terraform finishes.
-- **Git:** the lecture's per-folder `.gitignore` files ignore `*.tfvars` and
-  `.terraform.lock.hcl`, so those stay local; `terraform.tfvars.example` is what to copy.
-  The session `.gitignore` adds state files, saved plans and my IP file.
+- Long output: Terraform plans here are 200-400 lines. For those I ran
+  `-no-color | tee logs/<name>.log | tail` (or `grep` for the resource list), so the
+  screenshot shows the end of the output. When I typed `yes` into a piped `destroy`, the
+  terminal echoed it right under the command, because `tail` only prints the prompt after
+  Terraform finishes.
+- Git: the lecture's per-folder `.gitignore` files ignore `*.tfvars` and
+  `.terraform.lock.hcl`, so those stay local, and `terraform.tfvars.example` is committed
+  instead. The session `.gitignore` adds state files, saved plans and my IP file.
 
 ## Where the notes and reality differed
 
@@ -142,7 +142,7 @@ None of these were bugs that stopped a lab, so there is no failing-then-fixed sc
 
 ## Cleanup verification
 
-After the last destroy, run from this folder:
+After the last destroy I ran these checks from this folder:
 
 ```bash
 aws s3api list-buckets --query 'Buckets[].Name'
@@ -154,18 +154,14 @@ aws ec2 describe-nat-gateways --filter Name=state,Values=available,pending --que
 
 ![final cleanup verification](screenshots/01-final-cleanup-verify_24BCS10244.png)
 
-- **S3:** no buckets at all, so both of my buckets (07 and 09) are gone.
-- **Instances:** none pending, running or stopped with my Owner tag. The 09 instance is
+- S3: no buckets at all, so both of my buckets (07 and 09) are gone.
+- Instances: none pending, running or stopped with my Owner tag. The 09 instance is
   terminated.
-- **The VPC, Elastic IP and NAT gateway that do show up are not from this session.** They
+- The VPC, Elastic IP and NAT gateway that do show up are not from this session. They
   belong to the `taskboard-vpc` stack from Session 21 (the final project's EKS cluster),
   which runs in the same account and also carries `Owner = 24BCS10244`, but has
   `Session = 21`. I checked their tags and left them alone. None of my three VPCs
   (`session19-vpc`, `session19-mini-vpc`, `session19-final-vpc`) exist any more, as each
   folder's "after destroy" screenshot shows.
 - `terraform state list` is empty in 06, 07, 08 and 09.
-
-## Pending: needs the student
-
-- Commit and push this folder (`18-cloud-terraform/`). Nothing else is left to do in AWS
-  for this session.
+- Nothing from this session is left in AWS.

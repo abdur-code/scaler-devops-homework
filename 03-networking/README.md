@@ -1,13 +1,13 @@
-# Networking Fundamentals
+# Networking fundamentals
 
 Commands from the class repo ([devops-heros](https://github.com/Nency-Ravaliya/devops-heros),
 session 4 plus the session 2 Linux networking cheat sheet), run and explained.
 
 ## How I ran these
 
-`ip`, `ss`, `dig` and `traceroute` are Linux tools and do not exist on macOS. Rather
-than install a pile of packages, I used the `nicolaka/netshoot` image, which is an
-Alpine container with every network troubleshooting tool already in it.
+`ip`, `ss`, `dig` and `traceroute` are Linux tools and do not exist on macOS. Instead of
+installing a pile of packages, I used the `nicolaka/netshoot` image, an Alpine
+container with the network troubleshooting tools already in it.
 
 ```bash
 docker run -d --name netlab --cap-add=NET_ADMIN --cap-add=NET_RAW \
@@ -15,8 +15,8 @@ docker run -d --name netlab --cap-add=NET_ADMIN --cap-add=NET_RAW \
 docker exec -it netlab bash
 ```
 
-`NET_ADMIN` is needed for the commands that *change* the network (`ip addr add`,
-`ip route add`, `ip link set`); `NET_RAW` is needed for `ping` and `tcpdump`.
+`NET_ADMIN` is needed for the commands that change the network (`ip addr add`,
+`ip route add`, `ip link set`). `NET_RAW` is needed for `ping` and `tcpdump`.
 
 The container sits on Docker's default bridge, so its address is `172.17.0.13/16` and
 its gateway is `172.17.0.1`. That is why every private address below is in `172.17.x.x`.
@@ -24,14 +24,12 @@ its gateway is `172.17.0.1`. That is why every private address below is in `172.
 A few commands were run in a full Ubuntu container instead, where noted, because
 Alpine's BusyBox versions are cut down.
 
----
-
 ## 1. Does this machine have an address?
 
 ### `ip addr show`
 
-Every interface and every IP assigned to it. This is the first command to run when you
-want to know a machine's IP.
+Every interface and every IP assigned to it. This is the first command to run to find
+out a machine's IP.
 
 ```text
 $ ip addr show
@@ -53,13 +51,13 @@ What each part means:
 - `link/ether ee:4e:a2:f6:48:b4` is the MAC address, the hardware address of the card.
 - `inet 172.17.0.13/16` is the IPv4 address. The `/16` is the subnet mask, so the first
   16 bits identify the network and the remaining 16 are for hosts on it.
-- `UP` means the interface is administratively enabled; `LOWER_UP` means the link is
-  actually connected. Both are needed for traffic to flow.
+- `UP` means the interface is enabled and `LOWER_UP` means the link is connected. Both
+  are needed for traffic to flow.
 - `lo` is loopback, `127.0.0.1`, the address the machine uses to talk to itself.
 
 ### `ip -brief addr`
 
-Same thing, one line per interface. Much faster to read.
+Same information, one line per interface, which is much faster to read.
 
 ```text
 $ ip -brief addr
@@ -81,7 +79,7 @@ by default and nothing is using.
 
 ### `ip link show`
 
-The same interfaces at layer 2: MAC addresses and state, but **no IP addresses**.
+The same interfaces at layer 2: MAC addresses and state, but no IP addresses.
 
 ```text
 $ ip link show
@@ -92,7 +90,7 @@ $ ip link show
 ```
 
 `ip link` is layer 2, `ip addr` is layer 3. `mtu` is the largest packet the interface
-will send in one piece; 1500 is normal on a real network, and this shows 65535 because
+will send in one piece. 1500 is normal on a real network, and this shows 65535 because
 it is a virtual Docker interface with no physical limit.
 
 ### `ifconfig`
@@ -111,9 +109,9 @@ eth0      Link encap:Ethernet  HWaddr EE:4E:A2:F6:48:B4
           RX bytes:872 (872.0 B)  TX bytes:126 (126.0 B)
 ```
 
-Same address, written differently: `Mask:255.255.0.0` is the same as `/16`. The useful
-extra is `RX`/`TX`, the packet and byte counters, which tell you whether an interface
-that claims to be `UP` is actually passing traffic.
+It is the same address written differently: `Mask:255.255.0.0` is the same as `/16`. The
+useful extra is `RX`/`TX`, the packet and byte counters, which show whether an
+interface that claims to be `UP` is passing traffic.
 
 ### `hostname`
 
@@ -128,10 +126,8 @@ $ hostname -f
 a0c58ea2830b
 ```
 
-`hostname` alone is the machine name, `-I` prints only the IP addresses, `-f` the fully
-qualified name. `-I` is the one to use in scripts because there is nothing to parse out.
-
----
+`hostname` alone is the machine name, `-I` prints only the IP addresses and `-f` the
+fully qualified name. `-I` suits scripts because there is nothing to parse out.
 
 ## 2. Where do packets go?
 
@@ -145,20 +141,20 @@ default via 172.17.0.1 dev eth0
 172.17.0.0/16 dev eth0 proto kernel scope link src 172.17.0.13
 ```
 
-Read the specific rule first, then the catch-all:
+The specific rule comes first, then the catch-all:
 
-- `172.17.0.0/16 dev eth0 ... scope link` — anything in that range is on the local
+- `172.17.0.0/16 dev eth0 ... scope link`: anything in that range is on the local
   network and reachable directly out of `eth0`, no router involved.
-- `default via 172.17.0.1` — everything else goes to the gateway.
+- `default via 172.17.0.1`: everything else goes to the gateway.
 
 If the `default` line is missing, the machine can reach its own subnet but nothing
-beyond it. That is a very common cause of "the server can see its neighbours but not
-the internet".
+beyond it. That is a common cause of "the server can see its neighbours but not the
+internet".
 
 ### `ip route get`
 
-Asks the kernel which route a particular destination would take, instead of making you
-work it out from the table.
+Asks the kernel which route a particular destination would take, instead of working it
+out from the table.
 
 ```text
 $ ip route get 8.8.8.8
@@ -166,7 +162,7 @@ $ ip route get 8.8.8.8
     cache
 ```
 
-It answers three things at once: the next hop, the outgoing interface, and the source
+It gives three things at once: the next hop, the outgoing interface and the source
 address the packet will carry.
 
 ### `ip route add` and `ip route delete`
@@ -184,9 +180,9 @@ default via 172.17.0.1 dev eth0
 172.17.0.0/16 dev eth0 proto kernel scope link src 172.17.0.13
 ```
 
-A more specific route always wins over `default`, which is how you send one particular
-network down a VPN while everything else goes out normally. These changes live in
-memory only and vanish on reboot; permanent routes go in the distribution's network
+A more specific route always wins over `default`, which is how one particular network
+can be sent down a VPN while everything else goes out normally. These changes live in
+memory only and vanish on reboot. Permanent routes go in the distribution's network
 config (netplan, NetworkManager, `/etc/network/interfaces`).
 
 ### `ip neigh`
@@ -200,10 +196,8 @@ $ ip neigh
 
 Before sending anything to a machine on the same subnet, the kernel needs its MAC
 address, and ARP is how it asks. `REACHABLE` means the entry was confirmed recently.
-Worth checking when two machines on the same subnet cannot see each other: an
+This is worth checking when two machines on the same subnet cannot see each other: an
 `INCOMPLETE` entry means the ARP request is going unanswered.
-
----
 
 ## 3. Changing addresses and interfaces
 
@@ -220,12 +214,12 @@ eth0@if125       UP             172.17.0.13/16
 ```
 
 One interface can hold several addresses at the same time, which is how a single server
-hosts multiple sites on different IPs. Needs root, and inside Docker also needs
+hosts multiple sites on different IPs. It needs root, and inside Docker it also needs
 `--cap-add=NET_ADMIN`.
 
 ### `ip link set`
 
-`ip link set` changes the interface itself rather than its addresses.
+`ip link set` changes the interface itself and not its addresses.
 
 ```text
 $ ip link set eth0 mtu 1400
@@ -236,10 +230,8 @@ $ ip link set eth0 mtu 65535
 ```
 
 The other two forms are `ip link set eth0 down` and `ip link set eth0 up`. Running
-`down` on the interface you are SSH'd in through disconnects you instantly, with no way
-back in, so it is not a command to try casually on a remote machine.
-
----
+`down` on the interface an SSH session is using disconnects it instantly with no way
+back in, so it is not a command to try on a remote machine.
 
 ## 4. Can I reach the other end?
 
@@ -261,20 +253,21 @@ PING google.com (172.217.160.142) 56(84) bytes of data.
 rtt min/avg/max/mdev = 17.584/26.558/47.924/12.462 ms
 ```
 
-- `-c 4` stops after four packets; without it `ping` runs until you press Ctrl+C.
-- `time` is the round trip in milliseconds. `mdev` is how much it varied — high jitter
+- `-c 4` stops after four packets. Without it `ping` runs until Ctrl+C.
+- `time` is the round trip in milliseconds. `mdev` is how much it varied. High jitter
   on a stable link is a sign of congestion.
 - `ttl=63` is the time-to-live left in the reply. It started at 64 and one router
   decremented it, so the reply crossed one hop.
-- `0% packet loss` is the number that matters.
+- `0% packet loss` is the number to look at.
 
 A ping that resolves the name but never gets a reply usually means a firewall is
-dropping ICMP, not that the host is down. Plenty of servers deliberately ignore ping,
-so "ping fails" is not proof of anything on its own.
+dropping ICMP and the host may not be down at all. Plenty of servers ignore ping, so a
+failed ping does not prove anything on its own.
 
 ### `traceroute`
 
-Shows each router on the path by sending packets with deliberately small TTLs.
+Shows each router on the path by sending packets with small TTLs, so each router in turn
+sends back an error.
 
 ```text
 $ traceroute -m 6 google.com
@@ -287,12 +280,10 @@ traceroute to google.com (172.217.160.142), 6 hops max, 46 byte packets
  6  *  *  *
 ```
 
-Hop 1 is my gateway. The `*` rows are routers that did not reply — normal, because many
-are configured not to answer, and here Docker Desktop's network layer hides the rest of
-the path. Where it does work, traceroute tells you *at which hop* latency jumps or
-traffic dies, which is the difference between "my problem" and "my ISP's problem".
-
----
+Hop 1 is my gateway. The `*` rows are routers that did not reply. That is normal,
+because many are configured not to answer, and here Docker Desktop's network layer
+hides the rest of the path. Where it works, traceroute shows at which hop latency jumps
+or traffic dies, which separates "my problem" from "my ISP's problem".
 
 ## 5. Is DNS working?
 
@@ -308,13 +299,13 @@ Name:	github.com
 Address: 20.207.73.82
 ```
 
-`Server` is the DNS server that answered, on the standard DNS port **53**.
-`Non-authoritative` means the answer came from a cache rather than from the domain's own
+`Server` is the DNS server that answered, on the standard DNS port 53.
+`Non-authoritative` means the answer came from a cache and not from the domain's own
 nameserver.
 
 ### `dig`
 
-The detailed one, and the one to use when DNS is actually the problem.
+The detailed one, and the one to use when DNS is the problem.
 
 ```text
 $ dig github.com +short
@@ -332,11 +323,12 @@ github.com.		48	IN	A	20.207.73.82
 ```
 
 - `status: NOERROR` means the lookup succeeded. `NXDOMAIN` would mean the name does not
-  exist, which is a different problem from a server that will not answer.
+  exist, which is a different problem from a server that does not answer.
 - `A` is the record type, an IPv4 address.
 - `48` is the TTL in seconds: how long this answer may be cached before it must be
   looked up again. This is why a DNS change does not take effect everywhere instantly.
-- `Query time: 1 msec` — answered from cache. A slow query time points at the resolver.
+- `Query time: 1 msec` means it was answered from cache. A slow query time points at
+  the resolver.
 
 Other record types work the same way:
 
@@ -345,11 +337,11 @@ $ dig github.com MX +short
 0 github-com.mail.protection.outlook.com.
 ```
 
-`+short` is what you want inside a script.
+`+short` is handy inside a script.
 
 ### `host`
 
-The short one. Prints the address and the mail server together.
+The short one. It prints the address and the mail server together.
 
 ```text
 $ host github.com
@@ -375,7 +367,7 @@ place to look, because that pattern means the network is fine and DNS is broken.
 
 ### `/etc/hosts`
 
-A local name-to-IP list, checked **before** DNS.
+A local name-to-IP list, checked before DNS.
 
 ```text
 $ cat /etc/hosts
@@ -389,17 +381,15 @@ ff02::2	ip6-allrouters
 ```
 
 Anything listed here beats DNS. That makes it useful for pointing a real domain at a
-test server before changing public DNS records — and it is also worth checking when a
-domain resolves to something inexplicable on one machine only.
+test server before changing public DNS records. It is also worth checking when a
+domain resolves to something unexpected on one machine only.
 
 The last line is Docker adding the container's own ID and IP.
 
----
-
 ## 6. What is listening on this machine?
 
-I started a TCP listener on 9000 and a UDP one on 9001 with `nc` so there would be
-something real to see.
+I started a TCP listener on 9000 and a UDP one on 9001 with `nc` so there was
+something to see.
 
 ### `ss -tulpn`
 
@@ -414,10 +404,11 @@ The flags: `t` TCP, `u` UDP, `l` listening only, `p` show the owning process, `n
 numeric ports instead of service names.
 
 `0.0.0.0:9000` means it accepts connections on any address. If it said `127.0.0.1:9000`
-it would only accept local ones — and that is exactly the bug behind "the app works
-inside the container but the published port does nothing".
+it would only accept local ones, which is the usual cause of "the app works inside the
+container but the published port does nothing".
 
-This is the command for "address already in use": it names the PID holding the port.
+This is also the command for "address already in use", because it names the PID holding
+the port.
 
 ### `netstat -tulpn`
 
@@ -432,8 +423,7 @@ udp        0      0 0.0.0.0:9001            0.0.0.0:*                           
 ```
 
 `netstat` comes from the deprecated `net-tools` package. `ss` reads the same kernel data
-faster and is what to use now, but `netstat` is what you will find muscle-memoried into
-older runbooks.
+faster and is what to use now, but `netstat` still shows up in older runbooks.
 
 ### `ss -s`
 
@@ -453,11 +443,9 @@ FRAG	  0         0         0
 ```
 
 `estab` is live connections. `timewait` is connections that have closed but are held
-briefly in case a late packet arrives; a huge `timewait` count on a busy server is a
-recognised symptom of a client opening a new connection per request instead of reusing
+briefly in case a late packet arrives. A very large `timewait` count on a busy server is
+a known symptom of a client opening a new connection per request instead of reusing
 them.
-
----
 
 ## 7. Is the service on the other end answering?
 
@@ -480,9 +468,9 @@ ETag: "6a99ab33-339"
 Accept-Ranges: bytes
 ```
 
-`200 OK` means the server answered normally, and `Server:` tells you which software
-answered — useful when you are not sure whether you are hitting the app or a proxy in
-front of it. Without `-I` you get the body as well.
+`200 OK` means the server answered normally, and `Server:` names the software that
+answered, which helps when it is unclear whether the request hit the app or a proxy in
+front of it. Without `-I` the body is printed as well.
 
 ```text
 $ curl -s http://172.17.0.8 | grep -E "<h1>|<p>"
@@ -502,7 +490,7 @@ last-modified: Wed, 02 Sep 2026 22:14:26 GMT
 allow: GET, HEAD
 ```
 
-`-w` prints just the numbers, which is what you want in a health check:
+`-w` prints just the numbers, which suits a health check:
 
 ```text
 $ curl -s -o /dev/null -w "status=%{http_code} time=%{time_total}s size=%{size_download}B\n" https://example.com
@@ -516,9 +504,9 @@ $ curl -s ifconfig.me
 202.131.xxx.xxx
 ```
 
-That is the address the internet sees, which is my router's public IP, not the
+That is the address the internet sees, which is my router's public IP and not the
 `172.17.0.13` the container has. Many private addresses sharing one public address is
-NAT. (Last octets masked, since this file is in a public repo.)
+NAT. (I masked the last octets because this file is in a public repo.)
 
 ### `wget`
 
@@ -530,17 +518,13 @@ $ head -4 page.html
 <!doctype html><html lang="en"><head><title>Example Domain</title>...
 ```
 
-The difference from `curl`: `wget` saves to a file by default, `curl` prints to the
-screen by default. `-q` is quiet, `-O` sets the output filename. `wget` is the better
-choice for downloading (it can recurse and resume); `curl` is the better choice for
-inspecting.
-
----
+The difference from `curl` is that `wget` saves to a file by default and `curl` prints
+to the screen. `-q` is quiet and `-O` sets the output filename. `wget` is better for
+downloading (it can recurse and resume) and `curl` is better for inspecting.
 
 ## 8. What is actually on the wire? `tcpdump`
 
-Not in the task list, but it is the tool that settles arguments, so I ran one request
-under it.
+`tcpdump` was not in the task list, but I ran one request under it to see the packets.
 
 ```text
 $ tcpdump -i eth0 -n -c 6 'host 172.17.0.8'
@@ -555,16 +539,13 @@ $ tcpdump -i eth0 -n -c 6 'host 172.17.0.8'
 
 Those first three lines are the TCP three-way handshake, visible in the `Flags` column:
 
-1. `[S]` — client sends SYN
-2. `[S.]` — server replies SYN-ACK
-3. `[.]` — client sends ACK, connection established
+1. `[S]`: client sends SYN
+2. `[S.]`: server replies SYN-ACK
+3. `[.]`: client sends ACK, connection established
 
-Only then does the `GET` go out, and the `200 OK` comes back. Being able to see this is
-what lets you tell apart "the connection never opened" (no SYN-ACK, so firewall or
-nothing listening) from "the connection opened but the app misbehaved" (handshake fine,
-bad HTTP status).
-
----
+Only then does the `GET` go out, and the `200 OK` comes back. Seeing this separates
+"the connection never opened" (no SYN-ACK, so a firewall or nothing listening) from
+"the connection opened but the app misbehaved" (handshake fine, bad HTTP status).
 
 ## Summary
 
@@ -581,20 +562,20 @@ bad HTTP status).
 | `curl` / `wget` | is the service answering, and with what |
 | `tcpdump` | what is really happening on the wire |
 
-`ifconfig` and `netstat` are the deprecated ancestors of `ip` and `ss`. Still worth
-recognising, but reach for the new ones.
+`ifconfig` and `netstat` are the deprecated predecessors of `ip` and `ss`. I can read
+them, but I use the new ones.
 
 ## The order I work through when something is unreachable
 
-1. `ip addr` — does this machine even have an address
-2. `ip route` — is there a default route
-3. `ping <gateway>` — is the local network fine
-4. `ping 8.8.8.8` — is raw internet connectivity fine
-5. `ping google.com` — this separates DNS from everything above
-6. `dig` / `cat /etc/resolv.conf` — if step 5 failed but step 4 worked, it is DNS
-7. `ss -tulpn` on the far end — is the service actually listening, and on `0.0.0.0`
-8. `curl -I` — is it answering HTTP, and with which status
-9. `tcpdump` — when the answers above contradict each other
+1. `ip addr`: does this machine have an address
+2. `ip route`: is there a default route
+3. `ping <gateway>`: is the local network fine
+4. `ping 8.8.8.8`: is raw internet connectivity fine
+5. `ping google.com`: this separates DNS from everything above
+6. `dig` / `cat /etc/resolv.conf`: if step 5 failed but step 4 worked, it is DNS
+7. `ss -tulpn` on the far end: is the service listening, and on `0.0.0.0`
+8. `curl -I`: is it answering HTTP, and with which status
+9. `tcpdump`: for when the answers above contradict each other
 
 Each step rules out one layer, which is faster than guessing.
 

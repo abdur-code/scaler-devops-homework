@@ -1,16 +1,14 @@
-# Git / GitHub
+# Git and GitHub
 
 Both tasks were done in a throwaway repo created with `git init`, so all the output
 below is real and the commit hashes line up between the two sections.
-
----
 
 ## Task 1: `git commit -a -m` vs `git commit -m`
 
 ### The difference in one line
 
-`git commit -m` commits **only what is already staged** with `git add`.
-`git commit -a -m` stages every **modified or deleted tracked** file first, then commits.
+`git commit -m` commits only what is already staged with `git add`.
+`git commit -a -m` stages every modified or deleted tracked file first, then commits.
 Neither one picks up brand new untracked files.
 
 ### Setup
@@ -51,12 +49,13 @@ no changes added to commit (use "git add" and/or "git commit -a")
 exit code: 1
 ```
 
-**Nothing was committed**, and the exit code is 1, so the command genuinely failed. The
-change is in the working directory but was never staged, and `commit -m` only looks at
-the staging area. Git even suggests the fix in its own error message.
+Nothing was committed, and the exit code is 1, so the command failed. The change is in
+the working directory but was never staged, and `commit -m` only looks at the staging
+area. Git suggests the fix in its own message (`git add` or `commit -a`).
 
 The ` M` in `git status --short` means modified but not staged. A staged change shows as
-`M ` — the column matters: left column is the index, right column is the working tree.
+`M ` with the letter in the left column. The left column is the index and the right
+column is the working tree.
 
 ### Test B: the same change with `commit -a -m`
 
@@ -70,7 +69,7 @@ $ git status --short
 (empty = clean tree)
 ```
 
-Worked. `-a` staged the modified file and committed it in one step.
+This worked. `-a` staged the modified file and committed it in one step.
 
 ### Test C: does `-a` pick up a brand new file?
 
@@ -89,9 +88,8 @@ nothing added to commit but untracked files present (use "git add" to track)
 exit code: 1
 ```
 
-**No.** `??` means untracked — git has never recorded this path, so it is not a
-"modified tracked file" and `-a` ignores it entirely. This is the part people get wrong:
-`-a` is not "commit everything".
+No. `??` means untracked: git has never recorded this path, so it is not a modified
+tracked file and `-a` ignores it. `-a` does not mean "commit everything".
 
 ### Test D: a new file needs `git add` first
 
@@ -113,9 +111,9 @@ $ rm README.md && git commit -a -m "Remove README.md"
  delete mode 100644 README.md
 ```
 
-**Yes.** A deleted tracked file counts as a modification, so `-a` records the removal.
-Worth knowing, because it means `commit -a` can delete a file from the repo when you
-only meant to remove it locally.
+Yes. A deleted tracked file counts as a modification, so `-a` records the removal.
+That means `commit -a` can delete a file from the repo when I only meant to remove it
+locally.
 
 ### The log after Task 1
 
@@ -136,32 +134,29 @@ d6f3b43 Add config.txt
 |---|---|---|
 | Modified tracked file | ignored unless staged | staged and committed |
 | Deleted tracked file | ignored unless staged | staged and committed |
-| New untracked file | ignored | **ignored** |
+| New untracked file | ignored | ignored |
 | Needs `git add` first | yes | only for new files |
 
 ### What I understood
 
-`-a` is a shortcut, not a different kind of commit. It is convenient when you are
-editing files git already tracks, but it is blunt: it sweeps in *every* modified tracked
-file, including ones that belong in a different commit. When I want a focused commit I
-use `git add <specific files>` and plain `commit -m`. `git add -p` goes further and lets
-you stage part of a file.
+`-a` is just a shortcut: it stages every modified tracked file before committing. That
+is convenient for files git already tracks, but it also sweeps in every modified
+tracked file, including ones that belong in a different commit. When I want a focused
+commit I use `git add <specific files>` and plain `commit -m`. `git add -p` can stage
+only part of a file.
 
-`git commit -am "msg"` is the same thing with the flags joined, and is what most people
-actually type.
-
----
+`git commit -am "msg"` is the same thing with the flags joined.
 
 ## Task 2: `git cherry-pick`
 
-Cherry-pick copies the *change* from one specific commit onto the current branch,
+Cherry-pick copies the change from one specific commit onto the current branch,
 without bringing the other commits on that branch along with it.
 
 ### The scenario
 
-Three commits on a `hotfix` branch: two half-finished features, and in the middle of
-them one urgent config fix. The fix needs to go to `main` now; the features are not
-ready and must stay put.
+I made three commits on a `hotfix` branch: two half-finished features and, in the
+middle of them, one urgent config fix. The fix has to go to `main` now. The features are
+not ready and stay on the branch.
 
 ### Starting point on main
 
@@ -215,10 +210,10 @@ Date:   Thu Sep 3 23:16:23 2026 +0530
  1 file changed, 1 insertion(+), 2 deletions(-)
 ```
 
-`--grep` searches commit messages, which beats scrolling the log. `git show --stat`
-confirms the commit touches only `config.txt` before I move it anywhere.
+`--grep` searches commit messages, which is quicker than scrolling the log.
+`git show --stat` confirms the commit touches only `config.txt` before I move it anywhere.
 
-So the hash I need is **1aa7c68**.
+The hash I need is `1aa7c68`.
 
 ### Cherry-pick it into main
 
@@ -259,8 +254,8 @@ $ ls
 app.txt		config.txt	extra.txt
 ```
 
-The port fix is on `main`, and `login.html` and `signup.html` are **not** — which is
-exactly the point of the exercise. The two WIP commits stayed on the branch.
+The port fix is on `main`, and `login.html` and `signup.html` are not. The two WIP
+commits stayed on the branch.
 
 (`config.txt` now shows only `port = 9090` because the fix commit rewrote the whole
 file rather than editing the one line, which is what the `1 insertion, 2 deletions`
@@ -286,19 +281,19 @@ $ git log --oneline --graph --all
 
 ### What I understood
 
-The important detail is in that graph. The commit on `main` is **3d5097e** but the
-original on `hotfix` is still **1aa7c68**. Cherry-pick does not move or share a commit —
-it applies the same diff as a **brand new commit with a new hash**. The message, author
-and original date are copied across, which is why the cherry-pick output printed a
-`Date:` line from earlier in the day.
+The graph shows it. The commit on `main` is `3d5097e` but the original on `hotfix` is
+still `1aa7c68`. Cherry-pick does not move or share a commit. It applies the same diff
+as a new commit with a new hash. The message, author and original date are copied
+across, which is why the cherry-pick output printed a `Date:` line from earlier in the
+day.
 
-The consequence is that the same change now exists twice in the repo's history. Git
-usually copes when `hotfix` is merged into `main` later, because the content matches,
-but if those lines get edited again on either side you get a conflict that looks
-confusing until you remember the change was duplicated.
+So the same change now exists twice in the repo's history. Git usually copes when
+`hotfix` is merged into `main` later, because the content matches, but if those lines
+get edited again on either side the conflict can look confusing until I remember the
+change was duplicated.
 
-So cherry-pick is for "I need this one fix over there, now". It is not the way to move
-work between branches in general — merge or rebase is.
+Cherry-pick is for "I need this one fix over there, now". For moving work between
+branches in general, merge or rebase is the right tool.
 
 ### Useful cherry-pick options
 
@@ -313,5 +308,4 @@ git cherry-pick --continue        # carry on once a conflict is resolved
 git cherry-pick --skip            # skip this commit and continue
 ```
 
-`-x` is worth using on a shared branch, because it records where the change came from
-and saves the next person the archaeology.
+`-x` is useful on a shared branch, because it records where the change came from.

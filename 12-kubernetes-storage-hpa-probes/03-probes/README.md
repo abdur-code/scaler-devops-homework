@@ -4,7 +4,7 @@
 **Enrollment number:** 24BCS10244
 
 Session 13 lecture material on health checks. Three nginx Pods each use a different
-probe. Then I deliberately broke the readiness and liveness checks to see what Kubernetes
+probe. Then I broke the readiness and liveness checks to see what Kubernetes
 does about each.
 
 This part ran in its own namespace, `probes-lab`, so it could run at the same time as the
@@ -20,10 +20,8 @@ commands are exactly as in the notes, without `-n`.
 | Probe | Question it asks | What happens when it fails |
 |---|---|---|
 | Startup | Has the app finished starting? | Container is restarted; the other probes are held off until it passes |
-| Readiness | Can it take traffic right now? | Pod is marked not ready and removed from the Service's endpoints. **No restart.** |
+| Readiness | Can it take traffic right now? | Pod is marked not ready and removed from the Service's endpoints. No restart. |
 | Liveness | Is it still healthy? | Container is restarted |
-
----
 
 ## 1. Liveness probe
 
@@ -82,11 +80,9 @@ All three probes are listed. The startup probe allows `failureThreshold=30` ×
 passes, so a slow-starting app isn't killed by liveness while it's still booting. nginx
 starts in about a second, so here it passes immediately.
 
----
-
 ## 4. Breaking readiness
 
-Changed the readiness path from `/` to `/wrong-path` and applied again, as the notes say:
+I changed the readiness path from `/` to `/wrong-path` and applied again, as the notes say:
 
 ```bash
 sed -i '' 's#path: /$#path: /wrong-path#' readiness.yaml
@@ -101,12 +97,12 @@ kubectl apply -f readiness.yaml
 `The Pod "readiness-demo" is invalid: spec: Forbidden: pod updates may not change fields
 other than spec.containers[*].image, …`
 
-**Root cause.** A bare Pod's spec is almost entirely immutable. Only the image, tolerations
+The root cause is that a bare Pod's spec is almost entirely immutable. Only the image, tolerations
 and a couple of timing fields can change in place. Probes aren't on that list, so the
 notes' "edit and apply again" can't work for a Pod. (It would for a Deployment, which
 handles the change by creating new Pods.)
 
-**Fix.** Delete the Pod and create it again from the edited file:
+The fix is to delete the Pod and create it again from the edited file:
 
 ```bash
 kubectl delete pod readiness-demo
@@ -126,8 +122,8 @@ kubectl describe pod readiness-demo | tail -n 12
 ![readiness failing](screenshots/10-readiness-failing_24BCS10244.png)
 ![readiness events](screenshots/11-readiness-events_24BCS10244.png)
 
-The Pod is `Running` with `0/1` ready and **0 restarts**. The Service now has **no
-endpoints**, so no traffic would reach it. The events show
+The Pod is `Running` with `0/1` ready and 0 restarts. The Service now has no
+endpoints, so no traffic would reach it. The events show
 `Readiness probe failed: HTTP probe failed with statuscode: 404`. The container is
 fine; Kubernetes just won't send it traffic.
 
@@ -149,7 +145,7 @@ kubectl get pod liveness-demo -w
 ![recreate](screenshots/13-liveness-recreate_24BCS10244.png)
 ![restarts](screenshots/14-liveness-restarts_24BCS10244.png)
 
-This time the container is **restarted**: 1, 2, 3 restarts, about 15 seconds apart
+This time the container is restarted: 1, 2, 3 restarts, about 15 seconds apart
 (5s initial delay + 3 failures × 5s period). Then the status becomes `CrashLoopBackOff`,
 where the kubelet waits longer and longer between restarts.
 
@@ -187,9 +183,9 @@ exit
 
 ![exec test](screenshots/18-exec-test-locally_24BCS10244.png)
 
-**Small problem in the notes:** `wget: not found`. The `nginx:1.27` image is Debian-based
+A small problem in the notes: `wget: not found`. The `nginx:1.27` image is Debian-based
 and doesn't include `wget`, but it does have `curl`. With curl the cause is obvious: `/`
-returns `200`, `/wrong-path` returns `404`, and the probe only accepts 200–399.
+returns `200`, `/wrong-path` returns `404`, and the probe only accepts 200 to 399.
 
 ## 7. Fix and verify
 
@@ -213,17 +209,15 @@ kubectl delete namespace probes-lab
 
 ![cleanup](screenshots/21-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
-- **Readiness and liveness fail differently.** Readiness failure only takes the Pod out
+- Readiness and liveness fail differently. Readiness failure only takes the Pod out
   of the Service (0/1, no endpoints, no restart). Liveness failure restarts the
   container, and repeated failures lead to `CrashLoopBackOff`. I saw both in the same
   event list.
-- **A startup probe protects slow starters.** It holds off liveness until the app is up,
-  so you don't need a huge `initialDelaySeconds` on the liveness probe.
-- **Pod specs are immutable.** Changing a probe means recreating the Pod. In real use
-  probes live in a Deployment, which rolls out new Pods for you.
-- **Debug order:** `describe` (events) → `logs --previous` (the dead container) →
-  `exec` and hit the endpoint yourself.
+- A startup probe protects slow starters. It holds off liveness until the app is up,
+  so the liveness probe does not need a huge `initialDelaySeconds`.
+- Pod specs are immutable. Changing a probe means recreating the Pod. In real use
+  probes live in a Deployment, which rolls out new Pods itself.
+- My debug order was `describe` (events), then `logs --previous` (the dead container),
+  then `exec` into a container and hit the endpoint by hand.

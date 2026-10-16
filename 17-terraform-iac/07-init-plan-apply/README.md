@@ -1,9 +1,9 @@
-# 07 - Terraform Init, Plan and Apply
+# 07 - Terraform init, plan and apply
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-The core workflow, step by step, on one bucket (`aws_s3_bucket.lifecycle_demo`, prefix
+This is the core workflow, step by step, on one bucket (`aws_s3_bucket.lifecycle_demo`, prefix
 `abdur-24bcs10244-s18-07-lifecycle-`; `default_tags` added as in the other folders).
 
 ```text
@@ -19,7 +19,7 @@ terraform init
 ![init](screenshots/01-init_24BCS10244.png)
 
 Prepares the working directory: installs the provider (v6.67.0), sets up the backend
-(local here) and writes the lock file. It's safe to run again; step 6 shows that.
+(local here) and writes the lock file. It is safe to run again, and step 6 shows that.
 
 ## Steps 2 and 3 - Format and validate
 
@@ -31,7 +31,7 @@ terraform validate
 ![fmt validate](screenshots/02-fmt-validate_24BCS10244.png)
 
 No output from `fmt` (already formatted) and `Success! The configuration is valid.`
-`validate` only checks syntax and internal consistency; it doesn't contact AWS.
+`validate` only checks syntax and internal consistency; it does not contact AWS.
 
 ## Step 4 - Plan
 
@@ -43,7 +43,7 @@ terraform plan
 
 Plan symbols: `+` create, `~` update in place, `-` destroy, `-/+` replace. A new bucket
 is all `+`: `Plan: 1 to add, 0 to change, 0 to destroy.` The note at the bottom says
-that without `-out` Terraform can't guarantee that a later `apply` will do exactly this.
+that without `-out` Terraform cannot guarantee that a later `apply` will do exactly this.
 
 ## Step 5 - Apply
 
@@ -69,10 +69,10 @@ terraform apply tfplan
 ![saved plan](screenshots/05-saved-plan_24BCS10244.png)
 
 The bucket already matched the code, so the saved plan is "No changes", and applying it
-does nothing (`0 added, 0 changed, 0 destroyed`). Note what's different:
-`terraform apply tfplan` **did not ask for `yes`**. The reviewed plan file *is* the
-approval, which is why CI pipelines run `plan -out` in one job and `apply <file>` in a
-later, approved job. `ls` shows the binary plan file `tfplan` next to the state.
+does nothing (`0 added, 0 changed, 0 destroyed`). One difference is that
+`terraform apply tfplan` did not ask for `yes`. The reviewed plan file is the approval,
+which is why CI pipelines run `plan -out` in one job and `apply <file>` in a later,
+approved job. `ls` shows the binary plan file `tfplan` next to the state.
 
 ### Problem found: `tfplan` is not covered by this folder's `.gitignore`
 
@@ -83,14 +83,15 @@ git check-ignore -v tfplan
 
 ![tfplan not ignored by folder gitignore](screenshots/06-gitignore-tfplan_24BCS10244.png)
 
-**Root cause.** The folder's `.gitignore` has `*.tfplan`, which matches files *ending in*
-`.tfplan` (e.g. `prod.tfplan`). The notes' own command `terraform plan -out=tfplan`
-writes a file named exactly `tfplan`, with no extension, so the pattern doesn't match.
+The root cause is that the folder's `.gitignore` has `*.tfplan`, which matches files
+ending in `.tfplan` (e.g. `prod.tfplan`). The notes' own command
+`terraform plan -out=tfplan` writes a file named exactly `tfplan`, with no extension, so
+the pattern does not match.
 `git check-ignore` shows it was only ignored because of my session-level
 `17-terraform-iac/.gitignore`, which lists `tfplan`. On its own, this folder would let a
 plan file into a commit, and plan files can contain sensitive values.
 
-**Fix.** Add `tfplan` to the folder's `.gitignore`, with a comment:
+The fix was to add `tfplan` to the folder's `.gitignore`, with a comment:
 
 ```bash
 tail -n 3 .gitignore
@@ -101,7 +102,7 @@ git check-ignore -v tfplan
 
 Now the match comes from `07-init-plan-apply/.gitignore:8:tfplan`.
 
-## Student exercise: the complete sequence
+## The complete sequence
 
 ```bash
 terraform init
@@ -115,10 +116,10 @@ terraform state list
 
 ![exercise](screenshots/08-student-exercise_24BCS10244.png)
 
-Running the whole sequence a second time shows that Terraform is **idempotent**. `init`
+Running the whole sequence a second time shows that Terraform is idempotent. `init`
 reuses the locked provider version, `plan` and `apply` both say
-`No changes. Your infrastructure matches the configuration.`, and `apply` doesn't even
-ask for `yes` because there's nothing to approve. `output` and `state list` show the same
+`No changes. Your infrastructure matches the configuration.`, and `apply` does not even
+ask for `yes` because there is nothing to approve. `output` and `state list` show the same
 bucket as before.
 
 ## Cleanup (added: the notes for this folder have no destroy step)
@@ -137,10 +138,10 @@ The bucket is destroyed, state is empty, and I deleted the leftover `tfplan` fil
 
 ## What I understood
 
-- `init` prepares, `validate` checks the code, `plan` compares code + state + reality,
-  and `apply` makes reality match the code. Running them again with no changes does
-  nothing.
-- A saved plan turns "plan" and "apply" into two separate, reviewable steps; applying it
+- `init` prepares, `validate` checks the code, `plan` compares the code, the state and
+  the real infrastructure, and `apply` makes reality match the code. Running them again
+  with no changes does nothing.
+- A saved plan turns "plan" and "apply" into two separate, reviewable steps. Applying it
   needs no prompt, because the plan file is the approval.
-- `.gitignore` patterns are literal about names: `*.tfplan` and `tfplan` are different
-  files, and checking with `git check-ignore -v` is better than assuming.
+- `.gitignore` patterns are literal about names. `*.tfplan` and `tfplan` are different
+  files, and `git check-ignore -v` is a better check than assuming.

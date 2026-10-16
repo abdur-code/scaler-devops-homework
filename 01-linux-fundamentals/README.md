@@ -1,4 +1,4 @@
-# Linux Fundamentals
+# Linux fundamentals
 
 ## How I ran these
 
@@ -21,22 +21,20 @@ running
 ```
 
 `journalctl` reads the journal that `systemd-journald` writes, so without a real init
-there is nothing for it to read. That is why the container needs `/sbin/init` as its
-command rather than `bash`.
-
----
+there is nothing for it to read. That is why the container runs `/sbin/init` as its
+command and not `bash`.
 
 ## Task 1: Soft link vs hard link
 
 ### The difference
 
-A **hard link** is a second name for the same file. Both names point at the same inode,
+A hard link is a second name for the same file. Both names point at the same inode,
 which is the actual data on disk, so neither name is more "real" than the other. The
 data is only freed when the last name pointing at it is deleted.
 
-A **soft link** (symlink) is its own small file whose contents are the *path* to another
+A soft link (symlink) is its own small file whose contents are the path to another
 file. It behaves like a shortcut. If the target is renamed, moved or deleted, the link
-still exists but now points at nothing.
+still exists but points at nothing.
 
 | | Hard link | Soft link |
 |---|---|---|
@@ -63,13 +61,13 @@ total 16
 18822640 -rw-r--r--@ 2 abdurrahman  wheel  17 Sep  3 22:47 report.txt
 ```
 
-Three things to read out of that output:
+What the output shows:
 
-- `report.txt` and `report-hard.txt` share inode **18822640**, and the number after the
-  permissions is **2**, the link count. One file, two names.
-- `report-soft.txt` has a different inode, starts with **l**, and shows `-> report.txt`.
-- The soft link's size is **10 bytes**, which is exactly the length of the string
-  `report.txt`. That is all a symlink stores.
+- `report.txt` and `report-hard.txt` share inode 18822640, and the number after the
+  permissions is 2, the link count. One file, two names.
+- `report-soft.txt` has a different inode, starts with `l`, and shows `-> report.txt`.
+- The soft link's size is 10 bytes, the length of the string `report.txt`. That is all a
+  symlink stores.
 
 ```text
 $ stat -f "%N  inode=%i  links=%l" report.txt report-hard.txt report-soft.txt
@@ -96,9 +94,9 @@ original content
 added through the hard link
 ```
 
-Expected, because there is only one file underneath.
+This is expected, since there is only one file underneath.
 
-### Deleting: this is the part that matters
+### Deleting the original
 
 ```text
 $ rm report.txt
@@ -120,7 +118,7 @@ The hard link still has all the data and its link count dropped from 2 to 1. The
 link still exists as a file, but the path it stores no longer resolves, so reading it
 fails.
 
-Deleting a soft link, on the other hand, does nothing to the target:
+Deleting a soft link does nothing to the target:
 
 ```text
 $ echo hello > target.txt && ln -s target.txt shortcut.txt && rm shortcut.txt && ls
@@ -129,7 +127,7 @@ report-soft.txt
 target.txt
 ```
 
-### The two things hard links cannot do
+### What hard links cannot do
 
 ```text
 $ ln /etc report-dir-link
@@ -137,17 +135,17 @@ ln: /etc: Is a directory
 exit code: 1
 ```
 
-Hard links to directories are refused, because they would let you build loops in the
-directory tree that tools like `find` could never get out of. Hard links also cannot
-cross filesystems, since an inode number only means something within one filesystem.
-Soft links have neither restriction:
+Hard links to directories are refused, because they would allow loops in the directory
+tree that tools like `find` could never get out of. Hard links also cannot cross
+filesystems, since an inode number only means something within one filesystem. Soft
+links have neither restriction:
 
 ```text
 $ ln -s /etc mydir-link && ls -l mydir-link
 lrwxr-xr-x@ 1 abdurrahman  wheel  4 Sep  3 22:47 mydir-link -> /etc
 ```
 
-A symlink can even be created pointing at something that does not exist yet:
+A symlink can also point at something that does not exist yet:
 
 ```text
 $ ln -s missing.txt broken.txt && ls -l broken.txt && cat broken.txt
@@ -161,10 +159,8 @@ cat: broken.txt: No such file or directory
 > file under a second name and the data survives until the last link is removed. A soft
 > link is a separate file that stores a path, so it breaks if the target moves or is
 > deleted. `ln` makes a hard link, `ln -s` makes a soft link. Hard links cannot cross
-> filesystems or point at directories; soft links can do both. In practice almost
-> everything you see on a real system, `/usr/bin/python3` for example, is a soft link.
-
----
+> filesystems or point at directories; soft links can do both. On a real system a lot of
+> paths, `/usr/bin/python3` for example, are soft links.
 
 ## Task 2: `adduser` vs `useradd`
 
@@ -173,11 +169,11 @@ cat: broken.txt: No such file or directory
 `useradd` is the low-level binary and exists on every distribution. It does exactly
 what the flags say and nothing more: no home directory, no password, no prompts.
 
-`adduser` on Debian and Ubuntu is a **Perl script that calls `useradd` underneath**. It
-is interactive and opinionated: it creates the home directory, copies the skeleton
-files, makes a matching group and asks for a password.
+`adduser` on Debian and Ubuntu is a Perl script that calls `useradd` underneath. It is
+interactive: it creates the home directory, copies the skeleton files, makes a matching
+group and asks for a password.
 
-Proof that it really is a wrapper:
+This shows it is a wrapper:
 
 ```text
 $ head -3 $(which adduser)
@@ -205,11 +201,11 @@ $ passwd -S testuser1
 testuser1 L 09/03/2026 0 99999 7 -1
 ```
 
-Notice what is wrong with that user: `/etc/passwd` claims the home is
-`/home/testuser1` but the directory was never created, the shell is `/bin/sh` not
-`/bin/bash`, and `passwd -S` reports **L** for locked, so nobody can log in yet.
+That user has several problems. `/etc/passwd` says the home is `/home/testuser1` but
+the directory was never created, the shell is `/bin/sh` and not `/bin/bash`, and
+`passwd -S` reports `L` for locked, so nobody can log in yet.
 
-### `useradd` done properly needs the flags spelled out
+### `useradd` with the flags spelled out
 
 ```text
 $ useradd -m -s /bin/bash testuser2
@@ -223,8 +219,8 @@ $ ls -a /home/testuser2
 .  ..  .bash_logout  .bashrc  .profile
 ```
 
-`-m` makes the home directory, `-s` sets the login shell. The three dotfiles were
-copied from `/etc/skel`, which is the template for every new home directory:
+`-m` makes the home directory and `-s` sets the login shell. The three dotfiles were
+copied from `/etc/skel`, the template for every new home directory:
 
 ```text
 $ ls -a /etc/skel
@@ -233,7 +229,7 @@ $ ls -a /etc/skel
 
 The password is still a separate step, `passwd testuser2`.
 
-### `adduser`, the recommended way on Ubuntu
+### `adduser`, the usual way on Ubuntu
 
 ```text
 $ adduser devuser
@@ -264,7 +260,7 @@ drwxr-xr-x 1 root    root    4096 Sep  3 17:21 ..
 ```
 
 One command produced the home directory, the right ownership, `drwxr-x---` permissions,
-the skeleton files and a `/bin/bash` shell. That is the whole argument for `adduser`.
+the skeleton files and a `/bin/bash` shell.
 
 Giving it a password and sudo rights:
 
@@ -276,9 +272,9 @@ $ usermod -aG sudo devuser && groups devuser
 devuser : devuser sudo
 ```
 
-`passwd -S` now shows **P**, a usable password. The `-a` in `usermod -aG` means
-*append*; leaving it out replaces the user's entire group list, which is an easy way to
-lock someone out of sudo by accident.
+`passwd -S` now shows `P`, a usable password. The `-a` in `usermod -aG` means append.
+Without it the user's entire group list is replaced, which can lock someone out of sudo
+by accident.
 
 ### Which one to use
 
@@ -286,11 +282,11 @@ lock someone out of sudo by accident.
 |---|---|
 | Creating a user by hand on Ubuntu or Debian | `adduser` |
 | Inside a script or a Dockerfile | `useradd -m -s /bin/bash` (no prompts) |
-| RHEL, CentOS, Alpine | `useradd` — `adduser` is either absent or just a symlink to it |
+| RHEL, CentOS, Alpine | `useradd` (`adduser` is either absent or just a symlink to it) |
 
-**Answer to the task:** on Ubuntu the recommended command is `adduser`, because it
-handles the home directory, group, skeleton files, shell and password in one go, so
-there is nothing to forget. I created the test user with it:
+For the task, the command to use on Ubuntu is `adduser`, because it handles the home
+directory, group, skeleton files, shell and password in one go. I created the test user
+with it:
 
 ```bash
 sudo adduser devuser
@@ -310,21 +306,19 @@ devuser:x:1002:1002:,,,:/home/devuser:/bin/bash
 The `,,,` on the last line is the GECOS field that `adduser` fills in and `useradd`
 leaves empty.
 
----
-
 ## Task 3: `journalctl`
 
 ### What it is for
 
 `systemd-journald` collects log output from the kernel, from early boot and from every
 service systemd starts, and stores it in one indexed binary journal. `journalctl` is
-the tool that reads it. Before systemd you would go hunting through separate plain-text
-files under `/var/log`; now one command with filters covers all of it.
+the tool that reads it. Before systemd the logs were in separate plain-text files under
+`/var/log`; now one command with filters covers all of them.
 
 Because the journal is binary and indexed, filtering by service, by priority or by time
-range is a real query rather than `grep` over a file.
+range is a query and not a `grep` over a file.
 
-### The flags worth knowing
+### Useful flags
 
 | Command | What it does |
 |---|---|
@@ -368,14 +362,14 @@ Sep 03 17:19:12 a0c58ea2830b systemd[1]: Starting A high performance web server 
 Sep 03 17:19:12 a0c58ea2830b systemd[1]: Started A high performance web server and a reverse proxy server.
 ```
 
-`systemctl status` gives you the current state plus the last few lines. `journalctl -u`
-gives you the whole history, which is what you need when the interesting event has
-already scrolled past.
+`systemctl status` shows the current state plus the last few lines. `journalctl -u`
+shows the whole history, which helps when the interesting event has already scrolled
+past.
 
-### The realistic case: a service that will not start
+### A service that will not start
 
-Reading logs is only useful when something is broken, so I broke it on purpose by
-dropping an invalid file into the nginx config directory:
+Logs matter most when something is broken, so I broke nginx on purpose by putting an
+invalid file into its config directory:
 
 ```text
 $ echo "this is not valid nginx config" > /etc/nginx/conf.d/broken.conf
@@ -388,7 +382,7 @@ $ systemctl is-active nginx
 failed
 ```
 
-systemd tells me it failed but not why. The journal does:
+systemd says it failed but not why. The journal does:
 
 ```text
 $ journalctl -u nginx -n 12
@@ -403,9 +397,8 @@ Sep 03 17:21:39 a0c58ea2830b systemd[1]: nginx.service: Failed with result 'exit
 Sep 03 17:21:39 a0c58ea2830b systemd[1]: Failed to start A high performance web server and a reverse proxy server.
 ```
 
-That is the whole point of the exercise. The line naming the file **and the line
-number** comes from nginx itself, not from systemd, and the journal captured it because
-journald picks up whatever a service writes to stdout and stderr.
+The line naming the file and the line number comes from nginx itself, and the journal
+captured it because journald picks up whatever a service writes to stdout and stderr.
 
 Fix and restart:
 
@@ -414,7 +407,7 @@ $ rm /etc/nginx/conf.d/broken.conf && systemctl restart nginx && systemctl is-ac
 active
 ```
 
-### Filtering the same journal other ways
+### Other ways to filter the journal
 
 ```text
 $ journalctl -p err -b
@@ -448,20 +441,18 @@ $ systemctl list-units --state=failed
 ```
 
 `-p err` narrowed nine lines down to the one that mattered. `systemctl list-units
---state=failed` is the quickest way to ask "is anything broken right now".
+--state=failed` is a quick way to check whether anything is broken right now.
 
-### My order of attack when a service is down
+### What I check when a service is down
 
-1. `systemctl status <name>` — is it failed, and what was the exit code
-2. `journalctl -u <name> -n 50` — read the real error
-3. fix the config, `systemctl restart <name>`
-4. `journalctl -u <name> -f` — watch it come up while you test
-
----
+1. `systemctl status <name>` to see whether it failed and what the exit code was
+2. `journalctl -u <name> -n 50` to read the real error
+3. fix the config, then `systemctl restart <name>`
+4. `journalctl -u <name> -f` to watch it come up while testing
 
 ## Task 4: Command cheat sheet
 
-Commands I practiced, grouped by what I would actually be doing.
+Commands I practiced, grouped by what I would be doing.
 
 ### Getting around
 
@@ -525,8 +516,8 @@ chown user:group file
 ```
 
 Read is 4, write 2, execute 1, added up per column for owner, group, others.
-`755` is `rwxr-xr-x`, `644` is `rw-r--r--`. `chmod +x` is the one you use most, on
-scripts.
+`755` is `rwxr-xr-x`, `644` is `rw-r--r--`. `chmod +x` on scripts is the most common
+use.
 
 ### Users and groups
 
@@ -604,8 +595,8 @@ tar -tzvf backup.tar.gz         # list without extracting
 zip -r out.zip dir/ && unzip out.zip
 ```
 
-`c` create, `x` extract, `t` list, `z` gzip, `v` verbose, `f` filename. The `f` has to
-come last because the filename follows it.
+`c` is create, `x` extract, `t` list, `z` gzip, `v` verbose, `f` filename. The `f` has
+to come last because the filename follows it.
 
 ### Redirection and pipes
 
@@ -619,7 +610,7 @@ cmd1 | cmd2           # pipe stdout into the next command
 cmd | tee file        # print AND save
 ```
 
-A realistic one-liner: `cat access.log | grep " 500 " | wc -l` counts the 500 errors.
+A practical one-liner: `cat access.log | grep " 500 " | wc -l` counts the 500 errors.
 
 ### Help and history
 
@@ -635,7 +626,7 @@ Ctrl+D        # end of input / logout
 Ctrl+L        # clear the screen
 ```
 
-### Cleanup for this task
+### Cleanup
 
 ```bash
 docker rm -f ubuntu-lab

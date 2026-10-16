@@ -3,18 +3,16 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Session 13, Task 2. An nginx Deployment with a CPU request of `100m` is scaled by an HPA
-between 1 and 5 replicas, targeting 50% average CPU. Load comes from busybox Pods running
-`wget` in a loop against the Service. Everything ran in the `default` namespace of my
-minikube cluster.
+Session 13, Task 2. I deployed an nginx Deployment with a CPU request of `100m` and let an
+HPA scale it between 1 and 5 replicas, targeting 50% average CPU. The load came from busybox
+Pods running `wget` in a loop against the Service. Everything ran in the `default` namespace
+of my minikube cluster.
 
 | File | What it is |
 |---|---|
 | `deployment.yaml` | `hpa-demo`, 1 replica, `requests.cpu: 100m`, `limits.cpu: 200m` |
 | `service.yaml` | `hpa-demo-service`, ClusterIP on port 80 |
 | `hpa.yaml` | `autoscaling/v2`, min 1, max 5, `averageUtilization: 50` |
-
----
 
 ## 1. Deploy the application
 
@@ -34,9 +32,9 @@ kubectl get svc
 
 ![service](screenshots/03-create-service_24BCS10244.png)
 
-## 2. Metrics Server
+## 2. Metrics server
 
-HPA can only scale on CPU if something reports CPU usage. Following the notes, I first
+The HPA can only scale on CPU if something reports CPU usage. Following the notes, I first
 tried `kubectl top` before enabling anything:
 
 ```bash
@@ -91,8 +89,8 @@ kubectl describe hpa hpa-demo
 
 ![baseline](screenshots/09-hpa-baseline_24BCS10244.png)
 
-`cpu: 0%/50%`, 1 replica. The condition `ScalingLimited  True  TooFewReplicas` reads oddly
-but is expected: at 0% load the HPA would like *zero* replicas, and `minReplicas: 1` stops
+`cpu: 0%/50%`, 1 replica. The condition `ScalingLimited  True  TooFewReplicas` looks odd
+but is expected: at 0% load the HPA would like zero replicas, and `minReplicas: 1` stops
 it.
 
 ## 5. Deploy a load generator
@@ -114,7 +112,7 @@ kubectl get pods -w
 ![hpa scaling up](screenshots/11-hpa-scaling-up_24BCS10244.png)
 ![pods scaling](screenshots/12-pods-scaling_24BCS10244.png)
 
-CPU went from 0% to **81%** of the request, the HPA raised replicas from **1 to 2**, and
+CPU went from 0% to 81% of the request, the HPA raised replicas from 1 to 2, and
 average CPU dropped back to 54% because the same traffic was now split over two Pods. The
 Pod watch shows the second `hpa-demo-…` Pod going `Pending → ContainerCreating → Running`.
 
@@ -131,7 +129,7 @@ kubectl get hpa -w
 ![more load](screenshots/13-increase-load_24BCS10244.png)
 ![hpa 3 replicas](screenshots/14-hpa-more-load_24BCS10244.png)
 
-At 59% the HPA went to **3 replicas**, and usage settled at 45%, just under the target.
+At 59% the HPA went to 3 replicas, and usage settled at 45%, just under the target.
 
 ## 7. Observe CPU and the scaling decisions
 
@@ -144,12 +142,12 @@ kubectl describe hpa hpa-demo
 ![top under load](screenshots/15-top-pods-under-load_24BCS10244.png)
 ![describe hpa](screenshots/16-describe-hpa-scaling_24BCS10244.png)
 
-Each nginx Pod uses 40–49m, roughly 45% of its 100m request. The HPA percentage is always
-measured against the **request**, not the node's CPU. Interestingly, each load generator
-burns ~330m, far more than the nginx Pods it's hammering: serving a tiny static page is
-cheap, spawning `wget` in a tight loop is not.
+Each nginx Pod uses 40 to 49m, roughly 45% of its 100m request. The HPA percentage is always
+measured against the request, not the node's CPU. Each load generator
+burns about 330m, far more than the nginx Pods it is hammering: serving a tiny static page is
+cheap, and spawning `wget` in a tight loop is not.
 
-The events show both decisions:
+The events show both scaling decisions:
 `New size: 2; reason: cpu resource utilization (percentage of request) above target`, then
 `New size: 3`. They match the HPA formula
 `desired = ceil(current replicas × current% / target%)`: `ceil(1 × 81/50) = 2` and
@@ -166,9 +164,9 @@ kubectl get hpa -w
 ![scale down](screenshots/18-hpa-scaling-down_24BCS10244.png)
 
 CPU dropped to 0% within a minute, but replicas stayed at 3 from the 16m mark until 20m and
-only then went **3 → 1** in one step. That delay is the default **5-minute scale-down
-stabilization window**: the HPA uses the highest recommendation from the last 5 minutes, so
-a brief dip in traffic doesn't cause Pods to be killed and recreated over and over.
+only then went from 3 to 1 in one step. That delay is the default 5-minute scale-down
+stabilization window: the HPA uses the highest recommendation from the last 5 minutes, so
+a brief dip in traffic does not cause Pods to be killed and recreated over and over.
 Scale-up has no such delay.
 
 ## 9. Cleanup
@@ -180,17 +178,14 @@ kubectl get all
 
 ![cleanup](screenshots/19-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
-- The HPA needs two things to work: **metrics-server** (no metrics means `<unknown>` and
-  no scaling) and a **CPU request** on the container (utilization is a percentage of the
+- The HPA needs two things to work: metrics-server (no metrics means `<unknown>` and
+  no scaling) and a CPU request on the container (utilization is a percentage of the
   request).
 - It scales out, not up: more Pods of the same size. The number comes straight from
   `ceil(replicas × current / target)`, which I could check against the events.
-- Scale-up is fast, scale-down is deliberately slow (5-minute stabilization) to avoid
-  flapping.
-- A single `wget` loop has a ceiling on how much load it can produce. To see the HPA go
-  past 2 replicas I had to add more generators. That is the "increase application load"
-  step in the task.
+- Scale-up is fast and scale-down is slow (5-minute stabilization) to avoid flapping.
+- A single `wget` loop has a ceiling on how much load it can produce. To get the HPA past
+  2 replicas I had to add more generators, which is the "increase application load" step
+  in the task.

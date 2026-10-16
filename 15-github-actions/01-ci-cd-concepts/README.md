@@ -1,4 +1,4 @@
-# CI vs CD and the CI/CD Pipeline
+# CI vs CD and the CI/CD pipeline
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -18,7 +18,7 @@ pipelines are in the later folders.
 └── README.md
 ```
 
-## CI, Continuous Delivery, Continuous Deployment
+## CI, continuous delivery and continuous deployment
 
 | | Continuous Integration | Continuous Delivery | Continuous Deployment |
 |---|---|---|---|
@@ -28,8 +28,8 @@ pipelines are in the later folders.
 | Last step | PASS / FAIL report | a human approves the production release | no human gate, it ships automatically |
 | In this homework | `test`, `security-check`, `build` jobs | `docker` job: build image, smoke test, push to GHCR | not done (no production target) |
 
-A CI/CD pipeline is just these stages chained so that each one only runs if the previous
-one passed:
+A CI/CD pipeline is these stages chained so that each one only runs if the previous one
+passed:
 
 ```text
 git push ─▶ Checkout ─▶ Build ─▶ Test ──FAIL──▶ STOP (nobody ships broken code)
@@ -38,8 +38,6 @@ git push ─▶ Checkout ─▶ Build ─▶ Test ──FAIL──▶ STOP (nobo
                                    ▼
                                Package ─▶ Deliver / Deploy
 ```
-
----
 
 ## 1. CI simulation
 
@@ -51,11 +49,11 @@ ls -l
 ![ci simulation](screenshots/01-ci-simulation_24BCS10244.png)
 
 The script walks through the CI stages: checkout, runtime setup, lint, unit tests,
-coverage. Only the `python3 --version` line is real (it printed my Mac's 3.14.5); the
-rest is hard-coded `echo` text. "14 unit tests" and "92.4%" are not measured. I used it
+coverage. Only the `python3 --version` line is real (it printed my Mac's 3.14.5). The
+rest is hard-coded `echo` text, so "14 unit tests" and "92.4%" are not measured. I used it
 only to see the stage order.
 
-## 2. Continuous Delivery vs Continuous Deployment
+## 2. Continuous delivery vs continuous deployment
 
 ```bash
 grep -n "MODE" cd_simulation.sh
@@ -67,19 +65,17 @@ grep -n "MODE" cd_simulation.sh
 
 Both modes package the app, scan it and deploy to staging. The only difference is the last
 stage. `delivery` stops at "Awaiting operator sign-off", while `deployment` auto-promotes to
-production. So the two CDs differ only in whether a human approves the final step.
-
----
+production. So the two differ only in whether a human approves the final step.
 
 ## What I understood
 
-- **CI is about the code, CD is about the release.** CI builds and tests every change so
-  bugs are caught the same day; CD takes a build that already passed CI and moves it
+- CI is about the code and CD is about the release. CI builds and tests every change so
+  bugs are caught the same day, and CD takes a build that already passed CI and moves it
   towards users.
-- **Delivery and Deployment differ by one gate.** Continuous Delivery keeps a manual
-  approval before production; Continuous Deployment removes it.
-- **A pipeline is a chain of gates.** If any stage fails, everything after it is skipped.
-  I saw this for real in `04-build-and-test` and `final-cicd-project`, where a failing test
-  stopped the build and the Docker stage.
-- **Simulations are not pipelines.** The borrowed scripts only print text; the later
-  folders run real tests inside a real runner container.
+- Delivery and deployment differ by one gate. Continuous delivery keeps a manual approval
+  before production and continuous deployment removes it.
+- A pipeline is a chain of gates. If any stage fails, everything after it is skipped. I
+  saw this in `04-build-and-test` and `final-cicd-project`, where a failing test stopped
+  the build and the Docker stage.
+- The borrowed simulation scripts only print text. The later folders run real tests inside
+  a real runner container.

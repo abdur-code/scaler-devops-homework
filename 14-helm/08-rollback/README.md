@@ -24,11 +24,10 @@ helm install rollback-demo ./app-chart
 
 ![install as written](screenshots/01-install-as-written_24BCS10244.png)
 
-**Problem.** `INSTALLATION FAILED: path "./app-chart" not found`.
-**Root cause.** The notes say "use the `app-chart` from topic 07", but the command is
-written as if the chart sat inside `08-rollback/`.
-**Fix.** Point at the chart where it lives instead of copying it, so there is only one
-copy of `app-chart`:
+The error was `INSTALLATION FAILED: path "./app-chart" not found`. The notes say "use the
+`app-chart` from topic 07", but the command is written as if the chart sat inside
+`08-rollback/`. I pointed the command at the chart where it lives instead of copying it,
+so there is only one copy of `app-chart`:
 
 ```bash
 helm install rollback-demo ../07-install-upgrade/app-chart
@@ -39,7 +38,7 @@ kubectl get deploy rollback-demo-app -o wide
 ![install fixed](screenshots/02-install-fixed_24BCS10244.png)
 ![revision 1 pods](screenshots/03-pods-rev1_24BCS10244.png)
 
-Revision 1: one Pod running `nginx:1.24`.
+Revision 1 is one Pod running `nginx:1.24`.
 
 ## 1. Upgrade to a broken image
 
@@ -53,9 +52,9 @@ kubectl get deploy rollback-demo-app -o wide
 ![broken pods](screenshots/05-pods-broken_24BCS10244.png)
 
 Helm reports `STATUS: deployed`, but the new Pod is in `ErrImagePull`. The old Pod
-(`…5666bb45b5-vg984`) is still `Running`. That's the Deployment's rolling update at work:
-the old Pod is only removed once a new one becomes ready, and that never happens. So the
-app is still up on the old version, but the Deployment's image is already
+(`…5666bb45b5-vg984`) is still `Running`. This is the Deployment's rolling update: the
+old Pod is only removed once a new one becomes ready, and that never happens. So the app
+is still up on the old version, but the Deployment's image is already
 `nginx:doesnotexist`.
 
 ```bash
@@ -65,8 +64,8 @@ helm history rollback-demo
 ![history](screenshots/06-history-broken_24BCS10244.png)
 
 Revision 2 says `deployed` / `Upgrade complete` even though it is broken. Without
-`--wait` or `--atomic`, Helm only checks that the API server **accepted** the objects,
-not that the Pods came up.
+`--wait` or `--atomic`, Helm only checks that the API server accepted the objects, not
+that the Pods came up.
 
 ## 2. Roll back to revision 1
 
@@ -81,8 +80,8 @@ helm history rollback-demo
 ![after rollback](screenshots/08-after-rollback_24BCS10244.png)
 
 The image is `nginx:1.24` again and only the original Pod remains: the broken one was
-removed. The history shows a new **revision 3** with `Rollback to 1`. Rollback doesn't
-delete revision 2; it writes a new revision with revision 1's contents.
+removed. The history shows a new revision 3 with `Rollback to 1`. Rollback doesn't delete
+revision 2, it writes a new revision with revision 1's contents.
 
 ## 3. `--atomic`: automatic rollback
 
@@ -106,7 +105,7 @@ kubectl get deploy rollback-demo-app -o wide
 
 ![after atomic](screenshots/10-after-atomic_24BCS10244.png)
 
-Revision 4 is `failed`, and revision 5, `Rollback to 3`, was created by Helm itself. The
+Revision 4 is `failed`, and revision 5 (`Rollback to 3`) was created by Helm itself. The
 Deployment is back on `nginx:1.24`, and the same Pod (now 2m35s old) never stopped
 serving.
 
@@ -125,7 +124,7 @@ kubectl get secrets -l owner=helm
 - A plain `helm upgrade` reports success as soon as Kubernetes accepts the objects, so a
   broken image still shows `deployed`. I have to check the Pods (or use `--wait`) to know
   whether the release actually works.
-- `helm rollback` never rewrites history. It adds a new revision that copies an old one,
+- `helm rollback` doesn't rewrite history. It adds a new revision that copies an old one,
   so the record shows what broke and when it was undone.
 - `--atomic` (which implies `--wait`) makes the upgrade all or nothing: if the Pods aren't
   ready before `--timeout`, Helm rolls back on its own and the command exits with an

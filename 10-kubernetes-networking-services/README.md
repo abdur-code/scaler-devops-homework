@@ -3,12 +3,12 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-The five Service types, each backed by the same kind of nginx workload so the only thing
-that changes between them is how traffic reaches the pods. Every command output below was
-run on my machine and pasted in.
+I set up the five Service types, each backed by the same kind of nginx workload so the only
+thing that changes between them is how traffic reaches the pods. Every command output below
+was run on my machine and pasted in.
 
 The images in each folder are rendered from the terminal transcripts captured during
-these runs — same text as the blocks below, just easier to scan.
+these runs. They have the same text as the blocks below, just easier to scan.
 
 ## Folder structure
 
@@ -34,21 +34,18 @@ Each subsection folder also holds its `*_24BCS10244.png` terminal capture.
 | 4 | ExternalName | inside the cluster | none | a CNAME | aliasing an external host |
 | 5 | Headless | inside the cluster, per-pod | `None` | every pod IP | StatefulSets |
 
-## A note on running these on macOS
+## Running these on macOS
 
 The cluster runs on minikube with the `docker` driver, so the node is a container on an
 internal Docker network at `192.168.49.2`. macOS has no route to that address, which is why
-the reachability tests below use `kubectl port-forward` rather than curling the node IP
-directly. The Services themselves behave exactly as they would on a real cluster — it is
-only the path from my laptop to the node that differs, and I have called that out in each
-section rather than glossing over it.
-
----
+the reachability tests below use `kubectl port-forward` instead of curling the node IP
+directly. The Services behave the same as they would on a real cluster. Only the path from
+my laptop to the node is different, and I say so in each section where it matters.
 
 ## 1. ClusterIP
 
-The default type. Kubernetes allocates a stable virtual IP that only exists inside the
-cluster, and load-balances across whichever pods currently match the selector.
+This is the default type. Kubernetes allocates a stable virtual IP that only exists inside
+the cluster, and load-balances across whichever pods currently match the selector.
 
 ```yaml
 spec:
@@ -77,16 +74,16 @@ NAME                    ENDPOINTS                                      AGE
 web-service-clusterip   10.244.0.21:80,10.244.0.22:80,10.244.0.23:80   0s
 ```
 
-The endpoints line is the one to read closely. The Service found all three pod IPs and
-bound to them on port 80 — the `targetPort`, not the `port`. If this list ever comes back
-empty, the selector does not match the pod labels, and that is the single most common
-reason a Service appears to do nothing.
+The endpoints line matters most here. The Service found all three pod IPs and bound to them
+on port 80, which is the `targetPort` and not the `port`. If this list comes back empty, the
+selector does not match the pod labels, which is the most common reason a Service appears to
+do nothing.
 
 `kubectl` also warned that `v1 Endpoints` is deprecated in favour of
-`discovery.k8s.io/v1 EndpointSlice` — the newer API scales better on large clusters, where
+`discovery.k8s.io/v1 EndpointSlice`. The newer API scales better on large clusters, where
 one Endpoints object listing thousands of IPs became a bottleneck.
 
-Testing from inside the cluster, using a `nicolaka/netshoot` pod:
+I tested from inside the cluster using a `nicolaka/netshoot` pod:
 
 ```text
 $ kubectl exec curl-client -- curl -s http://web-service-clusterip:8080 | head -5
@@ -103,29 +100,26 @@ $ kubectl exec curl-client -- curl -s http://web-service-clusterip.default.svc.c
 ```
 
 Both forms work. The short name resolves because pods get a search domain of
-`default.svc.cluster.local`; the long form is the fully qualified name and is what you want
-when calling across namespaces.
+`default.svc.cluster.local`. The long form is the fully qualified name, and it is the one to
+use when calling across namespaces.
 
 ![ClusterIP with all three pod IPs bound as endpoints](01-clusterip/clusterip-service_24BCS10244.png)
 
 ### What I understood
 
-The endpoints list is the Service. Everything else — the virtual IP, the DNS name — is
-stable packaging around that list, and the list is rebuilt continuously from whatever pods
-currently match the selector. When a Service "doesn't work", `kubectl get endpoints` tells
-you in one line whether it is a routing problem or a labelling problem, and it is almost
-always labelling.
+The endpoints list is the Service. The virtual IP and the DNS name are stable packaging
+around that list, and the list is rebuilt continuously from whatever pods currently match
+the selector. When a Service does not work, `kubectl get endpoints` shows in one line
+whether it is a routing problem or a labelling problem, and it is almost always labelling.
 
-The `port` / `targetPort` split confused me until I saw the endpoints bound to `:80` rather
-than `:8080`. `port` is what callers dial on the Service; `targetPort` is what the container
-listens on. They are independent on purpose, so the Service can present a tidy port without
-the application changing.
-
----
+The `port` / `targetPort` split confused me until I saw the endpoints bound to `:80` and not
+`:8080`. `port` is what callers dial on the Service, and `targetPort` is what the container
+listens on. They are separate so the Service can present a tidy port without the
+application changing.
 
 ## 2. NodePort
 
-Opens the same port on every node in the cluster and forwards it to the Service.
+A NodePort opens the same port on every node in the cluster and forwards it to the Service.
 
 ```yaml
 spec:
@@ -145,14 +139,14 @@ $ minikube ip
 192.168.49.2
 ```
 
-`80:30080/TCP` means port 80 inside the cluster, 30080 on the node. A NodePort is a
-ClusterIP *plus* a node-level port — it does not replace the virtual IP, it adds a way in.
+`80:30080/TCP` means port 80 inside the cluster and 30080 on the node. A NodePort is a
+ClusterIP plus a node-level port. It keeps the virtual IP and adds another way in.
 
-`30080` sits inside the default 30000–32767 range. Kubernetes reserves that band so a
-NodePort cannot collide with a normal service port like 80 or 443 already bound on the host.
+`30080` sits inside the default 30000-32767 range. Kubernetes reserves that band so a
+NodePort cannot collide with a normal port like 80 or 443 already bound on the host.
 
 The node's address is `192.168.49.2`, which is inside Docker's network and not routable
-from macOS, so the reachability check goes through a forwarded port instead:
+from macOS, so I checked reachability through a forwarded port:
 
 ```text
 $ kubectl port-forward svc/web-service-nodeport 8082:80 & sleep 6; curl -s http://localhost:8082 | head -5
@@ -163,28 +157,26 @@ $ kubectl port-forward svc/web-service-nodeport 8082:80 & sleep 6; curl -s http:
 ```
 
 On a bare-metal or cloud cluster, `curl http://<node-ip>:30080` would have worked directly.
-`minikube service web-service-nodeport --url` is the other way to get a usable address — it
+`minikube service web-service-nodeport --url` is another way to get a usable address, and it
 opens the same kind of tunnel.
 
 ![NodePort exposing 80:30080 and the node IP](02-nodeport/nodeport-service_24BCS10244.png)
 
 ### What I understood
 
-A NodePort does not replace the ClusterIP, it adds to it — the output still shows
-`10.98.209.79` alongside `80:30080/TCP`. That is the first hint that these types are layered
-rather than alternatives.
+A NodePort adds to the ClusterIP and does not replace it: the output still shows
+`10.98.209.79` alongside `80:30080/TCP`. That was the first sign that these types are
+layered on each other.
 
-The 30000–32767 range is a deliberate reservation so a NodePort can never collide with a
-normal service port already bound on the host. The cost is ugly URLs, and the deeper problem
-is that the port is opened on *every* node, so in front of a real cluster you still need
-something to spread traffic across them. That is the gap LoadBalancer fills.
-
----
+The 30000-32767 range is reserved so a NodePort can never collide with a normal service port
+already bound on the host. The cost is ugly URLs. The bigger problem is that the port is
+opened on every node, so in front of a real cluster something still has to spread traffic
+across them. LoadBalancer fills that gap.
 
 ## 3. LoadBalancer
 
-Asks the underlying infrastructure for an external load balancer and points it at the
-Service.
+A LoadBalancer Service asks the underlying infrastructure for an external load balancer and
+points it at the Service.
 
 ```text
 $ kubectl get svc web-service-loadbalancer
@@ -192,13 +184,13 @@ NAME                       TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S) 
 web-service-loadbalancer   LoadBalancer   10.110.98.117   <pending>     80:32477/TCP   0s
 ```
 
-`EXTERNAL-IP` is `<pending>`, and it will stay that way. A LoadBalancer Service is a
-*request* to a cloud provider's controller — on EKS it provisions an ELB, on GKE a Google
-load balancer. minikube has nobody to ask, so the request is never fulfilled. It is not an
-error; it is the honest state of a cloud-dependent object on a local cluster.
+`EXTERNAL-IP` is `<pending>`, and it stays that way. A LoadBalancer Service is a request to
+a cloud provider's controller: on EKS it provisions an ELB, on GKE a Google load balancer.
+minikube has nothing to ask, so the request is never fulfilled. That is not an error, just
+the normal state of a cloud-dependent object on a local cluster.
 
-Note that it still allocated `32477` as a node port. A LoadBalancer is layered on top of
-NodePort, which is layered on ClusterIP — each type builds on the one before it.
+It still allocated `32477` as a node port. A LoadBalancer is layered on top of NodePort,
+which is layered on ClusterIP, so each type builds on the one before it.
 
 The Service still routes correctly, which the port-forward shows:
 
@@ -210,29 +202,26 @@ $ kubectl port-forward svc/web-service-loadbalancer 8081:80 & sleep 6; curl -s h
 <title>Welcome to nginx!</title>
 ```
 
-`minikube tunnel` is the other option — it runs a process that assigns the pending external
+`minikube tunnel` is the other option. It runs a process that assigns the pending external
 IP and routes to it, but it needs root because it binds privileged ports.
 
 ![LoadBalancer stuck at EXTERNAL-IP pending, still routing](03-loadbalancer/loadbalancer-service_24BCS10244.png)
 
 ### What I understood
 
-`<pending>` is not a failure, it is an unanswered request. A LoadBalancer Service asks the
-infrastructure for an external address; on EKS a controller provisions an ELB and writes the
-address back, and on minikube there is nobody listening. Seeing it stay pending made the
-type make more sense than it would have on a cloud cluster, where it just works and the
+`<pending>` is an unanswered request, not a failure. A LoadBalancer Service asks the
+infrastructure for an external address. On EKS a controller provisions an ELB and writes the
+address back, and on minikube nothing is listening. Seeing it stay pending made the type
+easier to understand than it would have been on a cloud cluster, where it just works and the
 mechanism stays hidden.
 
-The node port it still allocated — `32477` — confirms the layering: LoadBalancer is
-NodePort plus an external address, and NodePort is ClusterIP plus a node-level port. Three
-types, one object, each adding a way in.
-
----
+The node port it still allocated (`32477`) confirms the layering: LoadBalancer is NodePort
+plus an external address, and NodePort is ClusterIP plus a node-level port.
 
 ## 4. ExternalName
 
-The odd one out: no selector, no pods, no virtual IP. It is a DNS alias that lets in-cluster
-code use a stable internal name for something that lives outside.
+ExternalName is the odd one out: no selector, no pods, no virtual IP. It is a DNS alias that
+lets in-cluster code use a stable internal name for something that lives outside.
 
 ```yaml
 spec:
@@ -246,8 +235,8 @@ NAME                        TYPE           CLUSTER-IP   EXTERNAL-IP      PORT(S)
 external-database-service   ExternalName   <none>       api.github.com   <none>    0s
 ```
 
-`CLUSTER-IP` is `<none>` and `PORT(S)` is `<none>` — there is nothing to load-balance and
-no port to map, because this Service never handles traffic.
+`CLUSTER-IP` and `PORT(S)` are both `<none>` because there is nothing to load-balance and
+no port to map. This Service never handles traffic.
 
 ```text
 $ kubectl exec dns-test-client -- nslookup external-database-service
@@ -262,35 +251,32 @@ $ kubectl exec dns-test-client -- curl -s -o /dev/null -w '%{http_code}\n' https
 200
 ```
 
-CoreDNS returned a **CNAME**, not an A record — the request is handed off to normal DNS from
+CoreDNS returned a CNAME and not an A record. The request is handed off to normal DNS from
 there, which resolved `api.github.com` to `20.207.73.85`. The traffic never passes through
-kube-proxy at all.
+kube-proxy.
 
-The practical use: point `database-service` at an RDS hostname in production and at a
-container in staging, and the application code stays identical. The catch is that TLS and
-`Host` headers still see the *real* name, so an ExternalName in front of an HTTPS endpoint
-needs the certificate to match the target, not the alias.
+In practice, `database-service` could point at an RDS hostname in production and at a
+container in staging, and the application code would stay the same. TLS and `Host` headers
+still see the real name, though, so an ExternalName in front of an HTTPS endpoint needs the
+certificate to match the target and not the alias.
 
 ![ExternalName resolving to a CNAME for api.github.com](04-externalname/externalname-service_24BCS10244.png)
 
 ### What I understood
 
 This is the one type that never touches kube-proxy. There is no virtual IP and no endpoints
-list, so no traffic passes through the Service at all — CoreDNS answers with a CNAME and the
-pod resolves the real name itself. `CLUSTER-IP: <none>` and `PORT(S): <none>` in the output
-are the tell.
+list, so no traffic passes through the Service. CoreDNS answers with a CNAME and the pod
+resolves the real name itself, which is what `CLUSTER-IP: <none>` and `PORT(S): <none>` in
+the output show.
 
-The practical value is that the same application code can point at `database-service` and
-have it mean RDS in production and an in-cluster container in staging. The catch I would not
-have predicted is that TLS and `Host` headers still see the *real* hostname — the alias is
-only a DNS indirection, so a certificate has to match the target, not the name the app uses.
-
----
+The catch I would not have predicted is that TLS and `Host` headers still see the real
+hostname. The alias is only a DNS indirection, so a certificate has to match the target and
+not the name the app uses.
 
 ## 5. Headless
 
-Set `clusterIP: None` and Kubernetes skips the virtual IP entirely. DNS then returns the
-pod addresses themselves.
+Setting `clusterIP: None` makes Kubernetes skip the virtual IP entirely. DNS then returns
+the pod addresses themselves.
 
 ```yaml
 spec:
@@ -299,7 +285,7 @@ spec:
     app: web-headless
 ```
 
-Backed by a StatefulSet rather than a Deployment, so the pods get stable ordinal names:
+I backed it with a StatefulSet instead of a Deployment, so the pods get stable ordinal names:
 
 ```text
 $ kubectl get svc web-service-headless
@@ -319,9 +305,9 @@ web-stateful-1   1/1     Running   0          2s    10.244.0.32   minikube
 web-stateful-2   1/1     Running   0          1s    10.244.0.33   minikube
 ```
 
-`web-stateful-0`, `-1`, `-2` — predictable names, created in order, unlike the random
-suffixes a Deployment hands out. The rollout output counts down one pod at a time because a
-StatefulSet starts them sequentially rather than all at once.
+The pods are `web-stateful-0`, `-1` and `-2`: predictable names, created in order, unlike
+the random suffixes a Deployment hands out. The rollout output counts down one pod at a time
+because a StatefulSet starts them sequentially.
 
 ```text
 $ kubectl exec headless-dns-client -- nslookup web-service-headless
@@ -336,9 +322,9 @@ Name:	web-service-headless.default.svc.cluster.local
 Address: 10.244.0.33
 ```
 
-Three A records, one per pod — compare that with ClusterIP, where the same lookup returned
-a single virtual IP. The client now sees the individual backends and decides for itself
-which to talk to.
+There are three A records, one per pod. The same lookup on the ClusterIP Service returned a
+single virtual IP. Here the client sees the individual backends and decides for itself which
+to talk to.
 
 Each pod is also individually addressable:
 
@@ -350,39 +336,36 @@ $ kubectl exec headless-dns-client -- curl -s http://web-stateful-0.web-service-
 <title>Welcome to nginx!</title>
 ```
 
-`<pod-name>.<service-name>` resolves to one specific pod. That is what makes headless
-Services the right fit for databases and message brokers: a Postgres replica needs to reach
-the *primary*, not "whichever node the load balancer picked."
+`<pod-name>.<service-name>` resolves to one specific pod. That makes headless Services a
+good fit for databases and message brokers: a Postgres replica needs to reach the primary,
+not whichever node a load balancer picked.
 
 ![Headless Service returning one A record per pod](05-headless/headless-service_24BCS10244.png)
 
 ### What I understood
 
-Setting `clusterIP: None` inverts the whole model. Instead of hiding three pods behind one
-address, DNS hands back all three and the client chooses. That is useless for stateless web
-servers and essential for anything stateful: a Postgres replica needs to reach *the primary*,
-not whichever backend a load balancer happened to pick.
+`clusterIP: None` reverses the usual model. Instead of hiding three pods behind one address,
+DNS hands back all three and the client chooses. That does nothing useful for stateless web
+servers, but it matters for anything stateful, because a Postgres replica needs the primary
+and not whichever backend a load balancer happened to pick.
 
 The StatefulSet is what makes that addressable. `web-stateful-0/-1/-2` are stable, ordered
-names, created one at a time — visible in the rollout output counting down — where a
-Deployment would have produced three random suffixes in parallel. Combining stable names
-with per-pod DNS gives `web-stateful-0.web-service-headless`, an address that survives the
-pod being rescheduled.
-
----
+names created one at a time (the rollout output counts down), where a Deployment would have
+produced three random suffixes in parallel. Stable names plus per-pod DNS give
+`web-stateful-0.web-service-headless`, an address that survives the pod being rescheduled.
 
 ## Notes
 
-**The types are layered, not parallel.** ClusterIP is the base. NodePort is ClusterIP plus a
-port on every node. LoadBalancer is NodePort plus a cloud load balancer pointed at it. That
-is visible in the output above — the LoadBalancer Service still shows a ClusterIP *and* a
-node port. ExternalName and Headless sit outside that stack; neither allocates a virtual IP.
+The types are layered. ClusterIP is the base, NodePort is ClusterIP plus a port on every
+node, and LoadBalancer is NodePort plus a cloud load balancer pointed at it. The
+LoadBalancer Service in the output above still shows a ClusterIP and a node port.
+ExternalName and Headless sit outside that stack, and neither allocates a virtual IP.
 
-**Everything hinges on labels.** Every Service except ExternalName finds its pods with a
-selector. Whenever a Service returns nothing, `kubectl get endpoints <name>` is the first
-command to run: empty endpoints means the selector and the pod labels disagree.
+Every Service except ExternalName finds its pods with a selector. When a Service returns
+nothing, `kubectl get endpoints <name>` is the first command to run: empty endpoints means
+the selector and the pod labels disagree.
 
-**Reproducing this section.** Each folder is self-contained:
+To reproduce this section, each folder is self-contained:
 
 ```bash
 cd 01-clusterip

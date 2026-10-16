@@ -1,4 +1,4 @@
-# Task 1: Terraform S3 Bucket Demo
+# Task 1: Terraform S3 bucket demo
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -7,7 +7,7 @@ Session 18 homework, Task 1: create an S3 bucket with Terraform using separate
 `main.tf`, `variables.tf`, `outputs.tf`, `provider.tf` and `terraform.tfvars` files, and
 run and document `init`, `fmt`, `validate`, `plan`, `apply`, `show`, `output` and
 `destroy`. I started from the lecture's `terraform-s3-demo` folder, ran it as written,
-and fixed what didn't work or didn't fit the homework. Each fix is shown below.
+and fixed what did not work or did not fit the homework. Each fix is shown below.
 
 The bucket `abdur-24bcs10244-s18-s3-demo` was created in `ap-south-1`, inspected, and
 destroyed again a few minutes later.
@@ -125,8 +125,6 @@ output "bucket_region" {
 }
 ```
 
----
-
 ## Prerequisites
 
 The notes say `aws configure`. That prompts for (and can echo) the access keys, so I
@@ -153,10 +151,9 @@ terraform init
 
 ![init](screenshots/02-init_24BCS10244.png)
 
-`Reusing previous version of hashicorp/aws from the dependency lock file` → installs
-**v6.66.0**. The lecture folder includes `.terraform.lock.hcl`, so I got exactly the
-version the instructor used, not the newest 6.x (6.67.0 in the other folders). That is
-what a committed lock file is for.
+`Reusing previous version of hashicorp/aws from the dependency lock file` installs
+v6.66.0. The lecture folder includes `.terraform.lock.hcl`, so I got exactly the version
+the instructor used and not the newest 6.x (6.67.0 in the other folders).
 
 ## 2. `terraform fmt` and `terraform validate` (as written)
 
@@ -169,7 +166,7 @@ terraform validate
 
 Both pass. Before running it I expected `validate` to fail: `outputs.tf` puts
 `type = string` inside each `output` block, and I had only ever seen `type` on variables.
-It didn't fail, so I checked whether Terraform 1.16 really understands that argument, or
+It did not fail, so I checked whether Terraform 1.16 really understands that argument or
 silently ignores it:
 
 ```bash
@@ -184,19 +181,20 @@ terraform validate
 ![output type check](screenshots/16-output-type-check_24BCS10244.png)
 
 An unknown argument would be reported as "Unsupported argument". Instead Terraform
-**enforces** the type: a `number` output with a string value fails with "does not match
+enforces the type: a `number` output with a string value fails with "does not match
 this output value's type constraint". So on my Terraform v1.16.5, `type` in an output
-block is a real, supported feature, and `outputs.tf` needs no fix. (I ran this check at
+block is a real, supported feature, and `outputs.tf` needs no fix. I ran this check at
 the end, after the destroy, which is why its screenshot number is 16. It only runs
-`validate`, which doesn't call AWS.) One caveat: the files say
-`required_version = ">= 1.6.0"`, and I only tested 1.16.5. An older Terraform that
-doesn't have output type constraints would reject these lines, so either the
-`required_version` should be raised or the `type` lines dropped if the demo must run on
-older versions.
+`validate`, which does not call AWS.
+
+The files say `required_version = ">= 1.6.0"`, and I only tested 1.16.5. An older
+Terraform without output type constraints would reject these lines, so the
+`required_version` would have to be raised, or the `type` lines dropped, if the demo
+needs to run on older versions.
 
 ## Problem 1: the default bucket name belongs to someone else
 
-S3 bucket names are global across **all** AWS accounts. `variables.tf` defaults to
+S3 bucket names are global across all AWS accounts. `variables.tf` defaults to
 `yatri1107`, so I checked whether that name is free before trying to use it:
 
 ```bash
@@ -207,27 +205,27 @@ aws s3api head-bucket --bucket abdur-24bcs10244-s18-s3-demo
 
 ![bucket name taken](screenshots/04-bucket-name-taken_24BCS10244.png)
 
-`head-bucket` returns **403 Forbidden** for `yatri1107`: the bucket exists, but in an
-account I can't access. An apply with that name would fail with `BucketAlreadyExists`.
-For my own name it returns **404 Not Found**, so the name is free. This check is
-read-only and costs nothing, unlike a failed `apply`.
+`head-bucket` returns 403 Forbidden for `yatri1107`: the bucket exists, but in an
+account I cannot access. An apply with that name would fail with `BucketAlreadyExists`.
+For my own name it returns 404 Not Found, so the name is free. This check is read-only
+and costs nothing, unlike a failed `apply`.
 
-**Fix:** I didn't edit the default in `variables.tf`; I set the value in a new
-`terraform.tfvars` instead, which is exactly what the tfvars file is for (Problems 2-3).
+The fix was to leave the default in `variables.tf` alone and set the value in a new
+`terraform.tfvars` instead, which is what the tfvars file is for (Problems 2-3).
 
 ## Problems 2 and 3: missing `terraform.tfvars`, and `provider.tf` vs `providers.tf` + `terraform.tf`
 
 - The homework lists `terraform.tfvars` as a deliverable, and the lecture README's
-  structure lists it too, but the folder didn't have one. **Fix:** created it with the
-  region and my bucket name, and a comment that it holds no secrets.
-- The homework asks for `provider.tf`; the lecture split the same content into
+  structure lists it too, but the folder did not have one. I created it with the region
+  and my bucket name, and a comment that it holds no secrets.
+- The homework asks for `provider.tf`, and the lecture split the same content into
   `terraform.tf` (the `terraform {}` block) and `providers.tf` (one line,
-  `provider "aws" { region = var.aws_region }`). **Fix:** merged both into `provider.tf`
-  with a comment saying so, and added `default_tags`. Terraform loads every `.tf` file in
-  the folder, so the file names don't matter to it; this is only about matching the
+  `provider "aws" { region = var.aws_region }`). I merged both into `provider.tf` with a
+  comment saying so, and added `default_tags`. Terraform loads every `.tf` file in the
+  folder, so the file names do not matter to it. This is only about matching the
   homework.
 - `main.tf` set `Project = "Session18"` on the bucket. Resource tags override
-  `default_tags`, so that would have hidden my `Project` tag; I removed it (with a
+  `default_tags`, so that would have hidden my `Project` tag. I removed it (with a
   comment).
 
 ```bash
@@ -249,8 +247,8 @@ git check-ignore -v terraform.tfvars
 
 The lecture `.gitignore` has `*.tfvars` (with an exception only for
 `terraform.tfvars.example`), so my new deliverable would never be committed. That rule
-makes sense when tfvars files contain secrets; this one doesn't. **Fix:** an explicit
-`!terraform.tfvars` exception, with a comment:
+makes sense when tfvars files contain secrets, but this one does not. The fix was an
+explicit `!terraform.tfvars` exception, with a comment:
 
 ```bash
 sed -n '11,16p' .gitignore
@@ -260,8 +258,8 @@ git check-ignore -q terraform.tfvars || echo "terraform.tfvars is NOT ignored"
 
 ![fixed](screenshots/07-gitignore-fixed_24BCS10244.png)
 
-The last matching rule is now `!terraform.tfvars`, so git will include the file.
-State, plans and `.terraform/` are still ignored.
+The last matching rule is now `!terraform.tfvars`, so git includes the file. State,
+plans and `.terraform/` are still ignored.
 
 ## 3. `terraform plan`
 
@@ -306,11 +304,11 @@ terraform state show aws_s3_bucket.devops553     # the real address
 
 ### Problem found: the README uses a resource name that doesn't exist
 
-`terraform state show aws_s3_bucket.demo` fails with **"No instance found for the given
-address!"**. **Root cause:** the lecture README (architecture diagram, step 6 and the
-"Complete Demo" list) calls the resource `aws_s3_bucket.demo` and the bucket `demo`, but
-`main.tf` declares `resource "aws_s3_bucket" "devops553"`. `state list` shows the real
-address. **Fix:** this README uses `aws_s3_bucket.devops553`. I kept the resource name in
+`terraform state show aws_s3_bucket.demo` fails with "No instance found for the given
+address!". The root cause is that the lecture README (architecture diagram, step 6 and
+the "Complete Demo" list) calls the resource `aws_s3_bucket.demo` and the bucket `demo`,
+but `main.tf` declares `resource "aws_s3_bucket" "devops553"`. `state list` shows the
+real address, so this README uses `aws_s3_bucket.devops553`. I kept the resource name in
 the code, because renaming it after apply would make Terraform plan a destroy and
 recreate (unless a `moved {}` block is added).
 
@@ -318,8 +316,8 @@ recreate (unless a `moved {}` block is added).
 
 ## 6. `terraform show`
 
-The homework asks for `terraform show`; the lecture README uses `terraform state show`.
-I ran both (above and here):
+The homework asks for `terraform show`, and the lecture README uses
+`terraform state show`. I ran both (above and here):
 
 ```bash
 terraform show
@@ -328,8 +326,8 @@ terraform show
 ![show](screenshots/11-show_24BCS10244.png)
 
 The full state in readable form: the bucket with everything AWS set by default (AES256
-encryption, versioning off, owner `FULL_CONTROL` grant) **plus the `Outputs:`
-section**, which `state show` doesn't print.
+encryption, versioning off, owner `FULL_CONTROL` grant) plus the `Outputs:` section,
+which `state show` does not print.
 
 ## 7. `terraform output`
 
@@ -353,11 +351,11 @@ aws s3api head-bucket --bucket $(terraform output -raw bucket_name)  # my bucket
 
 ![verify with cli](screenshots/13-verify-cli_24BCS10244.png)
 
-`aws s3 ls` lists my bucket. The README's `head-bucket --bucket demo` returns **403**:
-a bucket called `demo` exists, but it belongs to some other AWS account, so the
-README's verification command would "check" a stranger's bucket instead of the one we
-just made. With `terraform output -raw` the command always uses the right name, and
-AWS confirms `BucketRegion: ap-south-1`.
+`aws s3 ls` lists my bucket. The README's `head-bucket --bucket demo` returns 403. A
+bucket called `demo` exists, but it belongs to some other AWS account, so the README's
+verification command would "check" a stranger's bucket instead of the one I just made.
+With `terraform output -raw` the command always uses the right name, and AWS confirms
+`BucketRegion: ap-south-1`.
 
 While the bucket existed I also read its default security settings for the S3 research
 page: encryption, Block Public Access, object ownership and versioning. See
@@ -371,8 +369,8 @@ terraform plan -destroy
 
 ![plan -destroy](screenshots/14-plan-destroy_24BCS10244.png)
 
-`Plan: 0 to add, 0 to change, 1 to destroy.`, with every output going to `null`.
-Reviewed, so:
+`Plan: 0 to add, 0 to change, 1 to destroy.`, with every output going to `null`. That
+looked right, so I ran the destroy:
 
 ```bash
 terraform destroy
@@ -384,7 +382,7 @@ aws s3api head-bucket --bucket abdur-24bcs10244-s18-s3-demo
 ![destroy](screenshots/15-destroy_24BCS10244.png)
 
 `Destroy complete! Resources: 1 destroyed.` The state is empty, and AWS now answers
-**404 Not Found** for the bucket name: it is really gone, not just removed from state.
+404 Not Found for the bucket name, so it is really gone and not just removed from state.
 
 ## Summary of changes to the lecture files
 
@@ -419,14 +417,14 @@ aws s3api head-bucket --bucket abdur-24bcs10244-s18-s3-demo
 ## What I understood
 
 - Splitting a configuration into `provider.tf`, `variables.tf`, `main.tf` and
-  `outputs.tf` is only for people; Terraform reads all `.tf` files in the folder as
-  one configuration.
-- `variables.tf` declares inputs, `terraform.tfvars` gives them values. Changing the
-  bucket name meant editing data, not code.
+  `outputs.tf` is only for people, because Terraform reads all `.tf` files in the folder
+  as one configuration.
+- `variables.tf` declares inputs and `terraform.tfvars` gives them values, so changing
+  the bucket name meant editing data and not code.
 - S3 names are a global namespace. A hardcoded name in shared course material will
   almost always be taken, and `head-bucket` (403 vs 404) is a free way to check.
-- `terraform state show <address>` needs the exact address from the code; `state list`
-  is the source of truth for addresses.
+- `terraform state show <address>` needs the exact address from the code, and
+  `state list` shows the real addresses.
 - A committed `.terraform.lock.hcl` pins the provider version for everyone (6.66.0
-  here), and a `.gitignore` has to be checked against the files the homework actually
+  here). A `.gitignore` also has to be checked against the files the homework actually
   needs.

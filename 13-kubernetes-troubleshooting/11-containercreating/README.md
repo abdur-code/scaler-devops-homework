@@ -14,8 +14,6 @@ Files (my own):
 | `broken-pod.yaml` | `mount-demo`: nginx with a `configMap` volume `site-config` mounted at `/etc/site` |
 | `configmap.yaml` | the missing `site-config` ConfigMap (`site.conf` with two lines) |
 
----
-
 ## 1. Identify
 
 ```bash
@@ -63,13 +61,13 @@ kubectl get configmap site-config
 The namespace only has the automatic `kube-root-ca.crt` ConfigMap, and
 `site-config` is `NotFound`.
 
-**Root cause:** the Pod depends on a ConfigMap that was never created (in real life:
-forgotten in the deploy, wrong name, or created in a different namespace). Since the
-volume isn't `optional: true`, the kubelet refuses to start the container.
+Root cause: the Pod depends on a ConfigMap that was never created (in real life it could
+be forgotten in the deploy, have the wrong name, or sit in a different namespace). Since
+the volume isn't `optional: true`, the kubelet refuses to start the container.
 
 ## 4. Fix and verify
 
-The Pod spec is fine; the missing object just needs to exist. I created the ConfigMap
+The Pod spec is fine, and only the missing object needs to exist. I created the ConfigMap
 and didn't touch the Pod:
 
 ```bash
@@ -84,7 +82,7 @@ kubectl events --for pod/mount-demo
 
 On its next retry the kubelet mounted the volume, and the same Pod went `1/1 Running`
 with no restart or recreate. The file is in the container
-(`environment=lab`, `owner=24BCS10244`). The event list tells the whole story:
+(`environment=lab`, `owner=24BCS10244`). The event list shows the sequence:
 `FailedMount (x7 over 65s)`, then `Pulled` → `Created` → `Started`.
 
 ```bash
@@ -93,16 +91,14 @@ kubectl delete -f broken-pod.yaml -f configmap.yaml
 
 ![cleanup](screenshots/05-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
-- `ContainerCreating` that doesn't go away means the kubelet is stuck *before* starting the
+- `ContainerCreating` that doesn't go away means the kubelet is stuck before starting the
   container: usually a volume (missing ConfigMap/Secret/PVC), an image still pulling, or
   a network (CNI) setup error.
-- `kubectl logs` is useless here because no container has run. `describe` events
-  (`FailedMount`, `FailedCreatePodSandBox`) are the place to look.
-- For a missing ConfigMap/Secret the fix can be to create the object; the kubelet retries
+- `kubectl logs` shows nothing here because no container has run. The `describe` events
+  (`FailedMount`, `FailedCreatePodSandBox`) are where the cause is.
+- For a missing ConfigMap/Secret the fix can be to create the object. The kubelet retries
   on its own and the Pod recovers without being recreated.
 - `optional: true` on the volume would let the Pod start without it, but then the app
   runs without its config, which may be worse than not starting.

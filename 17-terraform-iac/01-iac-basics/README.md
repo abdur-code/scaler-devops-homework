@@ -1,4 +1,4 @@
-# 01 - What is Infrastructure as Code?
+# 01 - What is infrastructure as code?
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -16,17 +16,17 @@ fill in the form                    terraform apply  (create)
 repeat by hand for every env        same file works for dev / test / prod
 ```
 
-Why it matters: repeatability, automation, version control, consistency between
-environments, review through pull requests, easier disaster recovery (re-apply the
-code) and easy CI/CD integration.
+It helps with repeatability, automation, version control, consistency between
+environments, review through pull requests, disaster recovery (re-apply the code) and
+CI/CD integration.
 
 ## Code
 
 `main.tf` is the lecture file with two changes, both marked with comments:
 
 - `bucket_prefix` is `abdur-24bcs10244-s18-01-basics-` instead of `session18-iac-`,
-  so every bucket I create can be recognised (and cleaned up) by its name;
-- the provider has `default_tags` (`Project`, `Session`, `Owner`) so every resource is
+  so every bucket I create can be recognised (and cleaned up) by its name.
+- The provider has `default_tags` (`Project`, `Session`, `Owner`), so every resource is
   tagged without touching the resource block.
 
 ```hcl
@@ -68,8 +68,8 @@ terraform init
 ![init](screenshots/01-init_24BCS10244.png)
 
 Terraform read `required_providers`, found that `~> 6.0` currently means
-**hashicorp/aws v6.67.0**, installed it and wrote `.terraform.lock.hcl` to pin that
-exact version for the next run.
+hashicorp/aws v6.67.0, installed it and wrote `.terraform.lock.hcl` to pin that exact
+version for the next run.
 
 ## 2. `terraform fmt`, `terraform validate`, `terraform plan`
 
@@ -83,8 +83,8 @@ terraform plan
 
 `fmt` printed nothing (the file was already formatted) and `validate` says the
 configuration is valid. The plan shows one `+ create` with `bucket_prefix` set and the
-real name still `(known after apply)`. Note `tags` (what I wrote on the resource)
-versus `tags_all` (resource tags merged with the provider's `default_tags`).
+real name still `(known after apply)`. The plan lists `tags` (what I wrote on the
+resource) and `tags_all` (resource tags merged with the provider's `default_tags`).
 `Plan: 1 to add, 0 to change, 0 to destroy.`
 
 ## 3. `terraform apply`
@@ -132,24 +132,24 @@ refreshing, which is why they appear echoed near the top. Both ran in order.)
 
 ## Practice questions
 
-1. **What happens if 10 engineers manually create the same infrastructure?** We get 10
+1. What happens if 10 engineers manually create the same infrastructure? We get 10
    slightly different setups: different names, settings and tags, and things forgotten
    by some people. Nobody can tell which one is "correct", and problems that appear in
-   one environment can't be reproduced in another.
-2. **How can Git help with infrastructure?** Every change becomes a commit with an
-   author, a message and a diff, and can be reviewed in a pull request before anyone
-   runs `apply`. If a change breaks something, I can see exactly what changed and
-   revert it.
-3. **What if we need the same infrastructure in another environment?** Run the same code
+   one environment cannot be reproduced in another.
+2. How can Git help with infrastructure? Every change becomes a commit with an author, a
+   message and a diff, and can be reviewed in a pull request before anyone runs `apply`.
+   If a change breaks something, the diff shows exactly what changed and it can be
+   reverted.
+3. What if we need the same infrastructure in another environment? The same code runs
    again with different variable values (see [05-variables](../05-variables/README.md))
    and separate state. Nothing has to be rebuilt by hand.
 
 ## What I understood
 
-- With IaC the *file* is the source of truth, and the cloud is made to match it.
-- `init` → `fmt` → `validate` → `plan` → `apply` → `destroy` is the basic lifecycle, and
-  `plan` is the safety step: it shows what will change before anything changes.
-- `bucket_prefix` lets AWS/Terraform generate a unique name. That matters for S3, where
+- With IaC the file is the source of truth, and the cloud is made to match it.
+- `init`, `fmt`, `validate`, `plan`, `apply`, `destroy` is the basic lifecycle, and
+  `plan` shows what will change before anything changes.
+- `bucket_prefix` lets Terraform generate a unique name, which matters for S3 because
   names are global across all accounts.
-- `default_tags` on the provider is an easy way to tag everything a configuration
-  creates; `tags_all` shows the merged result.
+- `default_tags` on the provider tags everything a configuration creates, and `tags_all`
+  shows the merged result.

@@ -1,15 +1,15 @@
-# Session 16 Final Project: CI/CD Pipeline with GitHub Actions
+# Session 16 final project: CI/CD pipeline with GitHub Actions
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
 This is the homework's main deliverable: a complete CI/CD demo project built on the
-lecture's `10-final-cicd-pipeline`. The app is the Session 16 Python calculator. **CI**
-(test → security check → build → artifact) comes from the lecture. I added the **CD** part:
-a `Dockerfile`, plus a pipeline job that turns the build artifact into a container image,
-smoke-tests it and pushes it to GitHub Container Registry (`ghcr.io`), but only on a push to
-`main`. Everything was run locally with `act`; pushing to GitHub is the one step left for
-later (see the end of this file).
+lecture's `10-final-cicd-pipeline`. The app is the Session 16 Python calculator. The CI
+part (test → security check → build → artifact) comes from the lecture. I added the CD
+part: a `Dockerfile`, plus a pipeline job that turns the build artifact into a container
+image, smoke-tests it and pushes it to GitHub Container Registry (`ghcr.io`), but only on a
+push to `main`. Everything was run locally with `act`. Pushing to GitHub is the one step I
+have not done yet (see the end of this file).
 
 ## Pipeline at a glance
 
@@ -39,8 +39,8 @@ later (see the end of this file).
 | Application source code | `app/calculator.py`, tests in `tests/test_calculator.py`, `build.sh`, `requirements.txt` |
 | Dockerfile | `Dockerfile` (+ `.dockerignore`) |
 | GitHub Actions workflow | `.github/workflows/ci-cd.yml` |
-| CI pipeline | jobs `test`, `security-check`, `build` in `ci-cd.yml` (steps 1–8 below) |
-| CD pipeline | job `docker` in `ci-cd.yml` (steps 9–17 below) |
+| CI pipeline | jobs `test`, `security-check`, `build` in `ci-cd.yml` (steps 1-8 below) |
+| CD pipeline | job `docker` in `ci-cd.yml` (steps 9-17 below) |
 | Screenshots of pipeline execution | `screenshots/` (17 images) |
 | README | this file |
 
@@ -64,12 +64,12 @@ final-cicd-project/
 
 ## How I ran it
 
-- **Git.** The lecture turns this folder into its own git repo. My homework folder is
-  already inside a git repo that I must not commit to, so I did the git steps in a copy of
-  the project in a scratch folder outside the homework repo (same folder name, so the
-  prompt reads `final-cicd-project`). It used a repo-local identity and had **no remote**.
+- Git: the lecture turns this folder into its own git repo. My homework folder is already
+  inside a git repo that I did not want to commit this into, so I did the git steps in a
+  copy of the project in a scratch folder outside the homework repo (same folder name, so
+  the prompt reads `final-cicd-project`). It used a repo-local identity and had no remote.
   This folder is that project's final state, without `.git/`.
-- **GitHub Actions → act.** Every "push and watch the Actions tab" step was replaced by
+- GitHub Actions and act: I replaced every "push and watch the Actions tab" step with
   `act push`, which runs the same workflow file in Docker containers on my Mac. The common
   flags:
 
@@ -81,12 +81,10 @@ final-cicd-project/
   ```
 
   Each act run is piped through `tee ../logs/<name>.log | grep -E '…'`, so the screenshot
-  shows the step results (act's Success / Failure / Job succeeded lines) and the important output lines. The complete,
-  unfiltered output was only kept locally.
+  shows the step results (act's Success / Failure / Job succeeded lines) and the important
+  output lines. The complete, unfiltered output was only kept locally.
 
----
-
-# Part A: the lecture pipeline (`ci.yml`) as written
+## Part A: the lecture pipeline (`ci.yml`) as written
 
 ## 1. Project files
 
@@ -136,8 +134,8 @@ git remote -v
 ![git init and commit](screenshots/03-git-init-commit_24BCS10244.png)
 
 Commit `a9a8b4a` with the 8 lecture files. `build.sh` was committed as `100755` because I
-ran `chmod +x` first. `git remote add origin …` and `git push -u origin main` from section 9
-of the notes are pending (they need my GitHub account).
+ran `chmod +x` first. I did not run `git remote add origin …` and `git push -u origin main`
+from section 9 of the notes, because they need my GitHub account.
 
 ## 4. Job graph
 
@@ -148,9 +146,9 @@ act -g
 
 ![act list and graph](screenshots/04-act-list-graph_24BCS10244.png)
 
-`test` is stage 0; `build` and `security-check` are both stage 1 because both have
-`needs: test`. They wait for the tests and then run in parallel with each other. This is the
-"Architecture" diagram from the notes.
+`test` is stage 0, and `build` and `security-check` are both stage 1 because both have
+`needs: test`. They wait for the tests and then run in parallel with each other. This
+matches the "Architecture" diagram from the notes.
 
 ## 5. Run the pipeline: all green
 
@@ -195,10 +193,10 @@ echo "act exit code: ${pipestatus[1]}"
 
 ![ci fail](screenshots/07-act-ci-fail_24BCS10244.png)
 
-`Failure - Main Run tests`, `Job failed`, exit code 1. Build Application and Security
-Check **never started** (no "Set up job" line for them), because both have `needs: test`.
-The notes mention only the build being blocked, but the security check is blocked for the
-same reason. No artifact was produced from the broken commit.
+The output has `Failure - Main Run tests`, `Job failed` and exit code 1. Build Application
+and Security Check never started (no "Set up job" line for them), because both have
+`needs: test`. The notes mention only the build being blocked, but the security check is
+blocked for the same reason. No artifact was produced from the broken commit.
 
 ## 8. Fix, commit, run again
 
@@ -216,12 +214,11 @@ echo "act exit code: ${pipestatus[1]}"
 
 ![fix and rerun](screenshots/08-fix-commit-rerun_24BCS10244.png)
 
-Three commits now (add → break → fix), and all three jobs succeed again, which is section 12
-of the notes. (This time I filtered to just the job results to keep it short.)
+There are three commits now (add → break → fix), and all three jobs succeed again, which
+is section 12 of the notes. (This time I filtered to just the job results to keep it
+short.)
 
----
-
-# Part B: additions, the Dockerfile and the CD stage
+## Part B: additions, the Dockerfile and the CD stage
 
 The notes end with "Ready for CD / Deployment" and the homework asks for a Dockerfile and a
 CD pipeline. These are my additions.
@@ -239,13 +236,13 @@ docker build -t session16-calculator:local .
 
 Design choices:
 
-- **The image packages the CI build output (`build/`), not the raw source.** In the
+- The image packages the CI build output (`build/`) and not the raw source. In the
   pipeline, the CD job downloads the `calculator-build` artifact that the build job
-  produced, so the image contains exactly what was tested and built. Locally that means
-  running `./build.sh` before `docker build`.
-- **`python:3.12-slim`**, the same Python version the pipeline tests with.
-- **Non-root user** (`uid 10001`). The app needs no privileges.
-- **`PYTHONUNBUFFERED=1`**, so the prompts appear immediately when input is piped in (the
+  produced, so the image contains what was tested and built. Locally that means running
+  `./build.sh` before `docker build`.
+- The base image is `python:3.12-slim`, the same Python version the pipeline tests with.
+- The image runs as a non-root user (`uid 10001`), since the app needs no privileges.
+- `PYTHONUNBUFFERED=1` makes the prompts appear immediately when input is piped in (the
   smoke test does that).
 - `.dockerignore` keeps `.git`, tests, screenshots and caches out of the build context.
 
@@ -266,7 +263,7 @@ docker run --rm --entrypoint id session16-calculator:local
 
 The interactive calculator works inside the container (`-it` is needed because it reads
 from stdin). The image contains `build-info.txt` from the build, and the process runs as
-`uid=10001(calculator)`, not root. The app has no network port, so no `-p` mapping was
+`uid=10001(calculator)` and not root. The app has no network port, so no `-p` mapping was
 needed.
 
 ## 11. Rename the workflow
@@ -295,9 +292,9 @@ grep -n -E '^name:|^  [a-z-]+:$|needs:|- name:|if:' .github/workflows/ci-cd.yml
 Changes compared with the lecture's `ci.yml`:
 
 1. Name `CI/CD Pipeline`, and a workflow-level `env: IMAGE_NAME: session16-calculator`.
-2. `build` job: added the **`Check secret`** step from the demo notes (section 36), so the
-   pipeline uses a repository secret (`DEMO_SECRET`) without ever printing it.
-3. New **`docker` job (CD)** with `needs: [build, security-check]`: it only runs when the
+2. `build` job: I added the `Check secret` step from the demo notes (section 36), so the
+   pipeline uses a repository secret (`DEMO_SECRET`) without printing it.
+3. New `docker` job (CD) with `needs: [build, security-check]`: it only runs when the
    tests passed, the security check passed and the build produced an artifact.
 
 The `test` and `security-check` jobs are unchanged from the lecture.
@@ -335,7 +332,7 @@ Both push steps have
 
 | How the workflow started | `event_name` | `ref` | `ACT` | Image pushed? |
 |---|---|---|---|---|
-| `git push` to `main` on GitHub | `push` | `refs/heads/main` | unset | **yes** |
+| `git push` to `main` on GitHub | `push` | `refs/heads/main` | unset | yes |
 | Pull request into `main` | `pull_request` | `refs/pull/N/merge` | unset | no (built and smoke-tested only) |
 | "Run workflow" button | `workflow_dispatch` | `refs/heads/main` | unset | no |
 | `act push` on my Mac | `push` | `refs/heads/main` | `true` | no |
@@ -370,19 +367,19 @@ echo "act exit code: ${pipestatus[1]}"
 
 All four jobs succeeded:
 
-- **Test Application**: 5 passed.
-- **Security Check**: no sensitive files.
-- **Build Application**: `Secret is available.`, build, artifact uploaded.
-- **Docker Image (CD)**: downloaded the artifact; built `ghcr.io/abdur-code/session16-calculator`
-  tagged with the commit sha `23a2c81…` and `latest`; the smoke test got `Result: 15.0` and
-  `Cannot divide by zero`; then **"Image built and tested, NOT pushed. …
-  running-under-act=true"**. The two push steps were skipped (act doesn't print skipped
+- Test Application: 5 passed.
+- Security Check: no sensitive files.
+- Build Application: `Secret is available.`, build, artifact uploaded.
+- Docker Image (CD): downloaded the artifact and built `ghcr.io/abdur-code/session16-calculator`
+  tagged with the commit sha `23a2c81…` and `latest`. The smoke test got `Result: 15.0` and
+  `Cannot divide by zero`, and then the job printed "Image built and tested, NOT pushed. …
+  running-under-act=true". The two push steps were skipped (act doesn't print skipped
   steps, and the full output of that run has no `docker login` / `docker push`).
 
-Why `--env GITHUB_REPOSITORY…`: act fills `github.repository` from the repo's git remote.
-My scratch repo has no remote on purpose, so act would use its placeholder `nektos/act` and
-the image would be called `ghcr.io/nektos/…`. Passing the name the repo will have on GitHub
-makes the local run produce the same image name the real pipeline will.
+I passed `--env GITHUB_REPOSITORY…` because act fills `github.repository` from the repo's
+git remote. My scratch repo has no remote, so act would use its placeholder `nektos/act`
+and the image would be called `ghcr.io/nektos/…`. Passing the name the repo will have on
+GitHub makes the local run produce the same image name as the real pipeline.
 
 ## 16. The image the pipeline built
 
@@ -412,16 +409,15 @@ echo "act exit code: ${pipestatus[1]}"
 
 ![no secret](screenshots/17-act-cicd-no-secret_24BCS10244.png)
 
-Same commit, no `-s DEMO_SECRET`. Tests and security check pass, but the build fails at
-`Secret is not configured.` and the **Docker Image (CD) job never starts**: no artifact,
-no image. This is also what will happen on GitHub if the repo is pushed before the
-`DEMO_SECRET` secret is added, which is why the GitHub steps below add the secret first.
+This is the same commit with no `-s DEMO_SECRET`. Tests and security check pass, but the
+build fails at `Secret is not configured.` and the Docker Image (CD) job never starts, so
+there is no artifact and no image. The same thing will happen on GitHub if the repo is
+pushed before the `DEMO_SECRET` secret is added, which is why the GitHub steps below add
+the secret first.
 
----
+## Running it locally
 
-## Run it yourself
-
-**Locally**
+Without act:
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate      # .venv/ is git-ignored
@@ -432,7 +428,7 @@ docker build -t session16-calculator:local .
 docker run --rm -it session16-calculator:local
 ```
 
-**The pipeline with act** (needs Docker and act; the project must be a git repo with at
+The pipeline with act (needs Docker and act, and the project must be a git repo with at
 least one commit):
 
 ```bash
@@ -442,13 +438,13 @@ act push -P ubuntu-latest=catthehacker/ubuntu:act-latest \
 
 ## Pending: run on GitHub
 
-Not done yet, because it needs my GitHub account. The exact commands are in the root
-README of this session (`../README.md`, "Pending: needs the student"). In short:
+I have not done this yet, because it needs my GitHub account. The exact commands are in
+the root README of this session (`../README.md`, "Not done: pushing to GitHub"). In short:
 
 1. Copy this folder out of the homework repo, `git init`, commit.
 2. `gh auth switch` to my personal account `abdur-code`, then create
    `abdur-code/session16-cicd-github-actions`.
-3. `gh secret set DEMO_SECRET` **before** the first push.
+3. `gh secret set DEMO_SECRET` before the first push.
 4. `git push -u origin main`, then `gh run list` / `gh run watch` / `gh run view --log`.
 5. Screenshot the green run in the Actions tab and the `session16-calculator` package.
 
@@ -463,22 +459,20 @@ README of this session (`../README.md`, "Pending: needs the student"). In short:
   which is what the lecture uses and works both under act and on GitHub. On GitHub, v7/v8
   would be a drop-in upgrade for this workflow.
 
----
-
 ## What I understood
 
-- **CI decides if a commit is good; CD decides what happens to a good commit.** The
+- CI decides if a commit is good, and CD decides what happens to a good commit. The
   `docker` job can only start after `test`, `security-check` and `build` all pass. A broken
   test (step 7) or a missing secret (step 17) means no image at all.
-- **Artifacts connect the stages.** Each job runs on a fresh runner, so the CD job gets
-  the build output by downloading the `calculator-build` artifact instead of rebuilding
-  from source. The image contains exactly what CI tested and built.
-- **Publishing is the dangerous step, so it gets the strictest condition.** Building and
-  smoke-testing an image is safe on any event; pushing to a registry only happens for
-  `push` on `main`, never for PRs, manual runs or my local act runs.
-- **`GITHUB_TOKEN` plus `permissions:` replaces stored registry passwords.** The token
-  exists only for the run, and the job asks only for `packages: write`.
-- **act is a good rehearsal, not a replacement.** It runs the same YAML, but things like
+- Artifacts connect the stages. Each job runs on a fresh runner, so the CD job gets the
+  build output by downloading the `calculator-build` artifact instead of rebuilding from
+  source. The image contains what CI tested and built.
+- Publishing is the risky step, so it gets the strictest condition. Building and
+  smoke-testing an image is fine on any event, while pushing to a registry only happens
+  for `push` on `main`, and never for PRs, manual runs or my local act runs.
+- `GITHUB_TOKEN` plus `permissions:` replaces stored registry passwords. The token exists
+  only for the run, and the job asks only for `packages: write`.
+- act is a good rehearsal but not a replacement. It runs the same YAML, but things like
   `github.repository` (from the git remote), artifact URLs and skipped-step display differ,
   so the real GitHub run is still the final check.
 

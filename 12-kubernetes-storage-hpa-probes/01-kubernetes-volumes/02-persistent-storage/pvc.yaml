@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: student-pvc
 spec:
-  # Fix: without this line minikube's default StorageClass ("standard") is filled in,
+  # I added this line. Without it minikube's default StorageClass ("standard") is filled in,
   # a brand-new volume is provisioned, and student-pv is never used. An empty class
   # means "static binding only", so the claim binds to student-pv.
   storageClassName: ""

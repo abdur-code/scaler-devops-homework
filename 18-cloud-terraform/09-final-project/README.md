@@ -3,19 +3,19 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-**Addition (not in the lecture).** The homework asks for an end-to-end project with the
-architecture *Terraform -> VPC, Subnet, Security Group, EC2, S3*. The lecture stops at the
-network (08) and leaves EC2 as an "optional extension", so this folder takes the 08 mini
-project and adds:
+This is an addition, not part of the lecture. The homework asks for an end-to-end project
+with the architecture "Terraform -> VPC, Subnet, Security Group, EC2, S3". The lecture stops
+at the network (08) and leaves EC2 as an "optional extension", so this folder takes the 08
+mini project and adds:
 
-- one **EC2** `t3.micro` running Amazon Linux 2023, with a web page installed through
+- one EC2 `t3.micro` running Amazon Linux 2023, with a web page installed through
   `user_data`,
-- one **S3** bucket, `abdur-24bcs10244-s19-final-project`,
-- variables for everything that changes between environments, a **data source** for the
-  AMI, an **explicit dependency**, and more outputs.
+- one S3 bucket, `abdur-24bcs10244-s19-final-project`,
+- variables for everything that changes between environments, a data source for the AMI,
+  an explicit dependency, and more outputs.
 
 It was applied, checked with the AWS CLI and `curl`, and destroyed. The EC2 instance
-existed for about **two minutes** (apply finished 01:19:27, destroy finished 01:21:30).
+existed for about two minutes (apply finished 01:19:27, destroy finished 01:21:30).
 
 ## Architecture
 
@@ -42,7 +42,7 @@ flowchart TB
   me -->|aws s3 cp| s3
 ```
 
-The same thing in plain text, in case Mermaid doesn't render:
+The same diagram as plain text, in case Mermaid doesn't render:
 
 ```text
                           Internet
@@ -119,7 +119,7 @@ resource "aws_instance" "web" {
 }
 ```
 
-The instance only *references* the subnet and the security group, so on its own Terraform
+The instance only references the subnet and the security group, so on its own Terraform
 could launch it as soon as those two exist, possibly before the route to the Internet
 Gateway is in place. But `user_data` runs `dnf install` on first boot, and that needs the
 internet. Terraform can't see that dependency inside a shell script, so I declared it.
@@ -128,17 +128,15 @@ line covers the whole internet path.
 
 ### Security choices
 
-- **No SSH at all**: no port 22 rule and no `key_name`. The server sets itself up through
+- No SSH at all: no port 22 rule and no `key_name`. The server sets itself up through
   `user_data`, so nobody needs to log in.
-- **HTTP only from my own IP**, as a `/32`. The lecture's 08 group allowed 80 and 443
+- HTTP only from my own IP, as a `/32`. The lecture's 08 group allowed 80 and 443
   from `0.0.0.0/0`; I removed 443 (nothing listens on it) and narrowed 80.
-- **My IP stays out of the repo and the screenshots.** `my_ip_cidr` is marked
+- My IP stays out of the repo and the screenshots. `my_ip_cidr` is marked
   `sensitive = true`, so Terraform prints `(sensitive value)` instead of it. The value lives
   in `myip.auto.tfvars`, which is git-ignored, and I deleted it after the destroy.
-- **Cost guard**: the `instance_type` validation refuses anything except `t3.micro` or
+- Cost guard: the `instance_type` validation refuses anything except `t3.micro` or
   `t3.nano`.
-
----
 
 ## Step 1: variables and my IP
 
@@ -174,10 +172,10 @@ terraform plan -no-color -out=tfplan | tee logs/09-plan.log | grep -E "data\.|^ 
 ![plan](screenshots/03-plan_24BCS10244.png)
 
 First the data source is read (`data.aws_ssm_parameter.al2023: Read complete`), then
-**`Plan: 8 to add`**: the six network resources from 08 plus the instance and the bucket.
+`Plan: 8 to add`: the six network resources from 08 plus the instance and the bucket.
 The full plan is about 340 lines, so the screenshot filters it.
 
-## Step 4: the interesting parts of the plan
+## Step 4: the details of the plan
 
 ```bash
 sed -n '/# aws_instance.web will/,/user_data_base64/p' logs/09-plan.log | grep -v 'known after apply'
@@ -227,7 +225,7 @@ terraform apply tfplan
 
 ![apply](screenshots/06-apply_24BCS10244.png)
 
-**`Apply complete! Resources: 8 added`.** The order follows the graph: the VPC and the
+`Apply complete! Resources: 8 added`. The order follows the graph: the VPC and the
 bucket start together, the instance starts only after the route table association
 completes, and it is created last (13 s). The outputs give the public IP and `web_url`.
 
@@ -243,7 +241,7 @@ ls -l terraform.tfstate
 
 The state tracks the data source plus the 8 resources. It's a local JSON file of about
 24 KB, and it is git-ignored: it contains every real ID, and in this project also my IP
-in plain text. A sensitive variable is only hidden in the CLI output, not in the state.
+in plain text. A sensitive variable is hidden only in the CLI output, and the state still has it.
 
 ## Step 8: check it in AWS
 
@@ -260,11 +258,11 @@ aws s3api list-buckets --query "Buckets[?starts_with(Name,'abdur-24bcs10244-s19'
 ![aws cli verify](screenshots/08-aws-cli-verify_24BCS10244.png)
 
 The instance is `running`, `t3.micro`, in `ap-south-1a`, launched from the SSM-resolved
-AMI, with **KeyPair `None`**, private IP `10.20.1.216` (inside my subnet) and a public IP.
+AMI, with KeyPair `None`, private IP `10.20.1.216` (inside my subnet) and a public IP.
 The security group has exactly one inbound rule: TCP 80 from a single `/32` (masked with
 `sed`, as the command shows). The bucket exists.
 
-## Step 9: is the web server reachable, and is SSH closed?
+## Step 9: the web server and SSH
 
 ```bash
 curl -s "$(terraform output -raw web_url)"
@@ -274,7 +272,7 @@ nc -z -G 5 "$(terraform output -raw instance_public_ip)" 22; echo "port 22 exit 
 
 ![curl](screenshots/09-curl-web_24BCS10244.png)
 
-The page from `user_data` comes back with **HTTP 200**, and it says it was served by
+The page from `user_data` comes back with HTTP 200, and it says it was served by
 `ip-10-20-1-216.ap-south-1.compute.internal`, the instance's private hostname in my
 subnet. So the whole path works: IGW, route, security group, instance, and `dnf` reaching
 the internet at boot. Port 22 fails with exit code 1 after the 5-second timeout, because
@@ -301,9 +299,9 @@ yes
 
 ![destroy](screenshots/11-destroy_24BCS10244.png)
 
-**`Destroy complete! Resources: 8 destroyed`.** Two things worth pointing out:
+`Destroy complete! Resources: 8 destroyed`. Two things stand out in the output:
 
-- The bucket was deleted in 2 s **even though `hello.txt` was in it**. That is
+- The bucket was deleted in 2 s even though `hello.txt` was in it. That is
   `force_destroy = true` at work: the provider empties the bucket first. Without it,
   S3 refuses to delete a non-empty bucket and the destroy would stop with an error.
 - The order is the graph in reverse. The route table association waited until the
@@ -332,16 +330,16 @@ account-wide check is in the [session README](../README.md#cleanup-verification)
 
 ## Answers to the notes' EC2 questions (08, "Optional Extension")
 
-1. **Which subnet should the EC2 instance use?** The public subnet, because that is the one
+1. Which subnet should the EC2 instance use? The public subnet, because that is the one
    with the IGW route.
-2. **Which security group?** The project's own group, `session19-final-web-sg`, not the
+2. Which security group? The project's own group, `session19-final-web-sg`, not the
    VPC's `default` group.
-3. **Why does a public subnet need a route to the IGW?** Without it, replies to my
+3. Why does a public subnet need a route to the IGW? Without it, replies to my
    requests (and the instance's own downloads) have no way out of the VPC.
-4. **What else is needed to reach the instance from the internet?** A public IP
+4. What else is needed to reach the instance from the internet? A public IP
    (`map_public_ip_on_launch`), a security group rule for the port, and a process actually
    listening on it (httpd).
-5. **Why not open SSH to `0.0.0.0/0`?** Every bot on the internet would start guessing
+5. Why not open SSH to `0.0.0.0/0`? Every bot on the internet would start guessing
    passwords and keys. Here I didn't need SSH at all.
 
 ## What I understood
@@ -349,11 +347,12 @@ account-wide check is in the [session README](../README.md#cleanup-verification)
 - Data sources are read during `plan`, so the AMI ID was known before anything existed.
   Using the SSM parameter means the code keeps working when Amazon publishes a new image
   or when I switch regions.
-- Most dependencies come from references for free; `depends_on` is for the ones Terraform
-  can't see, such as "my boot script needs the internet". It affects both create order and
-  destroy order.
-- `sensitive = true` hides a value in the CLI output but not in the state file, so the
-  state has to be protected (git-ignored here, a locked-down remote backend in real teams).
+- Most dependencies come from references for free. `depends_on` is for the ones Terraform
+  can't see, such as "my boot script needs the internet", and it affects both create order
+  and destroy order.
+- `sensitive = true` hides a value in the CLI output, but the state file still has it, so
+  the state has to be protected (git-ignored here, a locked-down remote backend in real
+  teams).
 - `force_destroy` is what makes a bucket disposable. Without it, an object someone
   uploads outside Terraform would block the destroy.
 - With real money involved, the order is: plan, apply, verify, destroy, and then check

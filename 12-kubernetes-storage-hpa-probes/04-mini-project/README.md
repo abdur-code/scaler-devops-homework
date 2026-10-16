@@ -3,11 +3,11 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Session 13, Task 3. One nginx Deployment that combines everything from the session:
+Session 13, Task 3. This is one nginx Deployment that combines everything from the session:
 
-- **Persistence:** a PVC mounted at `/data`, so files outlive the Pod
-- **Elastic scaling:** an HPA keeping 2–5 replicas around 50% CPU
-- **Health checks:** startup, readiness and liveness probes on every Pod
+- Persistence: a PVC mounted at `/data`, so files outlive the Pod
+- Elastic scaling: an HPA keeping 2 to 5 replicas around 50% CPU
+- Health checks: startup, readiness and liveness probes on every Pod
 
 All objects live in their own namespace, `production-webapp`.
 
@@ -30,8 +30,6 @@ All objects live in their own namespace, `production-webapp`.
 | `service.yaml` | `web-service`, ClusterIP port 80 |
 | `hpa.yaml` | `web-app-hpa`, min 2, max 5, 50% CPU |
 
----
-
 ## 1. Deploy step by step
 
 ```bash
@@ -43,8 +41,8 @@ kubectl get pvc -n production-webapp
 ![namespace](screenshots/01-namespace_24BCS10244.png)
 ![pvc](screenshots/02-pvc_24BCS10244.png)
 
-The claim is `Bound` immediately to an automatically created volume. This time that's what
-we want: unlike the static-PV exercise, there's no pre-made PV, so the default StorageClass
+The claim is `Bound` immediately to an automatically created volume. This time that is what
+I want: unlike the static PV earlier, there is no pre-made PV, so the default StorageClass
 provisions one.
 
 ```bash
@@ -68,8 +66,6 @@ kubectl get hpa -n production-webapp
 
 `cpu: <unknown>/50%` is normal for the first ~30 seconds, until metrics-server has a sample
 for the new Pods.
-
----
 
 ## 2. Verification task 1: storage persistence
 
@@ -99,10 +95,10 @@ The file was written through `web-app-…-wsdbr`, which I then deleted. `NEW_POD
 replacement Pod, and it still reads `Student: Abdur Rahman Ibne Munir`.
 
 Two things I noticed while doing this:
-- `items[0]` just takes the first Pod in the list, which could have been the *other*,
+- `items[0]` just takes the first Pod in the list, which could have been the other,
   older replica. That would prove nothing, which is why I printed the name and the Pod ages.
 - Both replicas mount the same `ReadWriteOnce` claim. That only works because minikube has
-  a single node: RWO means one *node*, not one Pod. On a multi-node cluster the second
+  a single node: RWO means one node, not one Pod. On a multi-node cluster the second
   replica could get stuck if it were scheduled elsewhere.
 
 ## 3. Verification task 2: the Service
@@ -129,7 +125,7 @@ kubectl get hpa -n production-webapp -w
 ![load](screenshots/10-start-load_24BCS10244.png)
 ![one generator](screenshots/11-hpa-scaling-up_24BCS10244.png)
 
-**One load generator was not enough.** CPU rose to 32% and then 41%, but never crossed
+One load generator was not enough. CPU rose to 32% and then 41%, but never crossed
 the 50% target, so the HPA stayed at 2 replicas. The notes show it reaching 110%. The
 difference is `minReplicas: 2`: the single `wget` loop is spread over two Pods from the
 start, and one busybox loop can't push two nginx Pods past half their CPU request.
@@ -145,7 +141,7 @@ kubectl get hpa -n production-webapp -w
 ![more load](screenshots/12-increase-load_24BCS10244.png)
 ![scaling](screenshots/13-hpa-scaling-more-load_24BCS10244.png)
 
-At 57% the HPA went **2 → 3** replicas, and usage dropped to 48%.
+At 57% the HPA went from 2 to 3 replicas, and usage dropped to 48%.
 
 ```bash
 kubectl top pods -n production-webapp
@@ -158,8 +154,6 @@ The events include `New size: 3; reason: cpu resource utilization (percentage of
 request) above target`. The older `FailedGetResourceMetric` warnings are from the first
 minute, before metrics-server had data for the new Pods, which matches the
 `<unknown>` seen in step 1.
-
----
 
 ## 5. Bonus challenge 1: lower the target to 30%
 
@@ -192,7 +186,7 @@ kubectl get hpa -n production-webapp -w
 ![scale down](screenshots/18-hpa-scaling-down_24BCS10244.png)
 
 CPU fell to 1% within a minute, but the replica count held at 4 for about 5 minutes and
-then stepped down 4 → 3 → 2. It stops at **2**, not 1, because of `minReplicas: 2`.
+then stepped down from 4 to 3 to 2. It stops at 2 and not 1 because of `minReplicas: 2`.
 
 ## 7. Bonus challenge 2: readiness gating
 
@@ -214,7 +208,7 @@ Exactly as the challenge says: both Pods `Running` but `0/1`, and the Service's 
 list is empty. Unlike the bare Pods in the probes demo, `kubectl apply` works here because
 a Deployment replaces its Pods instead of editing them in place.
 
-This also shows why `strategy: Recreate` is risky. It removed *both* healthy Pods before
+This also shows why `strategy: Recreate` is risky. It removed both healthy Pods before
 starting the broken ones, so the app had zero ready Pods, a full outage. A `RollingUpdate`
 would have kept the old Pods serving while the new ones failed their readiness check.
 
@@ -264,18 +258,16 @@ provisioned volume went with it (reclaim policy `Delete`), so `get pv` is empty.
 `kubectl get pv` appears twice because I typed it while the namespace deletion was still
 running, and the terminal echoed it early.
 
----
-
 ## What I understood
 
-- The three pieces work together: the **PVC** keeps data when Pods are replaced, the
-  **HPA** changes how many Pods there are, and the **probes** decide which of them get
+- The three pieces work together: the PVC keeps data when Pods are replaced, the
+  HPA changes how many Pods there are, and the probes decide which of them get
   traffic and which get restarted.
-- **The HPA only reacts if the load per Pod is above target.** With `minReplicas: 2`, one
-  load generator was spread too thin to trigger scaling. That isn't a failure, it's the
-  HPA correctly deciding 2 Pods were enough.
-- **Readiness failure means no traffic; liveness failure means restarts.** In a Deployment
+- The HPA only reacts if the load per Pod is above target. With `minReplicas: 2`, one
+  load generator was spread too thin to trigger scaling. That was the HPA correctly
+  deciding 2 Pods were enough.
+- Readiness failure means no traffic and liveness failure means restarts. In a Deployment
   with `Recreate`, a bad readiness probe takes the whole app down. Rolling updates exist to
   prevent exactly that.
-- **ReadWriteOnce is per node, not per Pod.** Sharing one RWO volume between replicas only
+- ReadWriteOnce is per node, not per Pod. Sharing one RWO volume between replicas only
   worked here because there's one node.

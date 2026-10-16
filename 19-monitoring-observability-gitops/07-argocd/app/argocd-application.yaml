@@ -1,4 +1,4 @@
-# Apply this file from your local/admin environment; do not put it under the Git source path.
+# I apply this file from my local/admin environment. It is not kept under the Git source path.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -17,7 +17,7 @@ spec:
     path: app
     # Fix: the instructor's repo keeps this very file inside app/, so Argo CD also syncs the
     # Application from Git and overwrites local changes to it (it removed the finalizer above).
-    # Leave it out of what Argo CD renders, as the comment on line 1 intends.
+    # It is excluded from what Argo CD renders, as the comment on line 1 intends.
     directory:
       exclude: argocd-application.yaml
 

@@ -4,7 +4,7 @@
 **Enrollment number:** 24BCS10244
 
 Lecture topic `05-values-yaml`. Templates read settings from `.Values`. The defaults live
-in the chart's `values.yaml`, and you can override them per install with `-f <file>` or
+in the chart's `values.yaml`, and they can be overridden per install with `-f <file>` or
 `--set key=value`.
 
 ```text
@@ -35,10 +35,8 @@ helm install my-app ./chart --set replicaCount=3
 
 ![install as written](screenshots/02-install-set-as-written_24BCS10244.png)
 
-**Problem.** `INSTALLATION FAILED: path "./chart" not found`.
-**Root cause.** The notes use `./chart` as a placeholder, but the chart in this folder is
-called `my-app/`.
-**Fix.** Use `./my-app`:
+The error was `INSTALLATION FAILED: path "./chart" not found`. The notes use `./chart` as
+a placeholder path, but the chart in this folder is called `my-app/`, so I used `./my-app`:
 
 ```bash
 helm install my-app ./my-app --set replicaCount=3
@@ -56,12 +54,11 @@ helm install my-app ./my-app -f values-prod.yaml
 
 ![prod install as written](screenshots/04-install-prod-as-written_24BCS10244.png)
 
-**Problem.** `cannot re-use a name that is still in use`.
-**Root cause.** Release names are unique per namespace. Options A and B in the notes both
-install a release called `my-app`, and the first one still exists.
-**Fix.** Give the prod install its own name. (`helm upgrade my-app … -f values-prod.yaml`
-would also work, but then option A's release would be replaced, and the point here is to
-compare the two side by side.)
+The error was `cannot re-use a name that is still in use`. Release names are unique per
+namespace, and options A and B in the notes both install a release called `my-app`, so
+the first one was still in the way. I gave the prod install its own name. (Running
+`helm upgrade my-app … -f values-prod.yaml` would also work, but it would replace option
+A's release, and I wanted to compare the two side by side.)
 
 ```bash
 helm install my-app-prod ./my-app -f values-prod.yaml | head -n 6
@@ -115,16 +112,16 @@ helm template my-app ./my-app -f values-prod.yaml --set replicaCount=2 | grep -E
 1. chart defaults: 1 replica, `nginx:1.16.0`
 2. `-f values.yaml`: the tag becomes `latest`
 3. `-f values-prod.yaml`: 5 replicas
-4. `-f values-prod.yaml --set replicaCount=2`: **2** replicas. `--set` beats the file,
-   and the file beats the chart defaults.
+4. `-f values-prod.yaml --set replicaCount=2`: 2 replicas. `--set` beats the file, and
+   the file beats the chart defaults.
 
 (`image: busybox` is the chart's `helm test` Pod, which is also rendered.)
 
 ## Note: the README's prod tag differs from the file
 
 The notes show `values-prod.yaml` with `tag: v2.0.0`, but the file in the lecture repo has
-`tag: latest`. I kept the file. `nginx:v2.0.0` doesn't exist, so the README version would
-leave every prod Pod stuck pulling an image:
+`tag: latest`. I kept the file. `nginx:v2.0.0` doesn't exist, so the README version
+would leave every prod Pod stuck pulling an image:
 
 ```bash
 grep -A2 "^image" values-prod.yaml
@@ -147,13 +144,13 @@ kubectl get all
 ![uninstall](screenshots/11-uninstall_24BCS10244.png)
 ![after termination](screenshots/12-after-termination_24BCS10244.png)
 
-Right after the uninstall the six Pods were still on their way out: shown as `0/1
-Completed` while their containers stopped. The Deployments and Services were already gone.
-A few seconds later the namespace was empty.
+Right after the uninstall the six Pods were still on their way out and showed as `0/1
+Completed` while their containers stopped. The Deployments and Services were already gone,
+and a few seconds later the namespace was empty.
 
-`app.name` from the notes' values is never used: the `helm create` templates name objects
-with `fullname` from `_helpers.tpl`, not with `.Values.app.name`. That is why the
-Deployments are called `my-app` and `my-app-prod`, not `demo-app` / `demo-app-prod`.
+`app.name` from the notes' values is never used. The `helm create` templates name objects
+with `fullname` from `_helpers.tpl` instead of `.Values.app.name`, which is why the
+Deployments are called `my-app` and `my-app-prod` and not `demo-app` / `demo-app-prod`.
 
 ## What I understood
 
@@ -162,7 +159,7 @@ Deployments are called `my-app` and `my-app-prod`, not `demo-app` / `demo-app-pr
   changes.
 - Release names are unique per namespace. To run the same chart twice, give each install
   its own name. To change an existing install, use `helm upgrade`.
-- Values files belong in Git; `--set` is for quick one-offs. A prod deploy driven by
+- Values files can go in Git and `--set` is for quick one-offs. A prod deploy driven by
   `--set` flags in someone's shell history can't be reviewed or repeated.
 - A value only does something if a template reads it. Setting `app.name` changed nothing
   here.

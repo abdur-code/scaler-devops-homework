@@ -3,16 +3,16 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Session 18, Task 2 (AWS services research). Written in my own words. The CLI examples
-only *describe* things; no instance, key pair, security group or volume was created.
+Session 18, Task 2 (AWS services research). The CLI examples only describe things, and
+no instance, key pair, security group or volume was created.
 
 ## What EC2 is
 
-EC2 gives you virtual servers ("instances") in AWS data centres, billed by the second
-while they run. You pick the operating system image, the size (CPU/RAM), the network and
-the disk, and you get a machine you can SSH into a minute later. Instead of buying a
-server for peak load, you start more instances when you need them and stop them when
-you don't.
+EC2 gives virtual servers ("instances") in AWS data centres, billed by the second while
+they run. The user picks the operating system image, the size (CPU/RAM), the network and
+the disk, and gets a machine that can be reached over SSH a minute later. Instead of
+buying a server for peak load, more instances are started when needed and stopped when
+they are not.
 
 ```text
 AMI (OS image) + instance type (size) + key pair (login) + security group (firewall)
@@ -28,17 +28,17 @@ An AMI is the template an instance boots from: the root volume snapshot (OS plus
 pre-installed software), the CPU architecture (`x86_64` or `arm64`), and launch
 permissions.
 
-- **AWS / Marketplace AMIs:** Amazon Linux 2023, Ubuntu, Windows, RHEL, vendor images.
-- **Custom AMIs:** I can build my own from a configured instance (or with Packer) so new
+- AWS / Marketplace AMIs: Amazon Linux 2023, Ubuntu, Windows, RHEL, vendor images.
+- Custom AMIs: I can build my own from a configured instance (or with Packer) so new
   servers start with my app already installed ("golden image").
-- AMIs are **regional** and IDs differ per region and change with every update, so
+- AMIs are regional, and the IDs differ per region and change with every update, so
   hardcoding an AMI ID is fragile. AWS publishes the current ID in SSM Parameter Store,
   which is what the CLI example below uses.
 
 ## Instance types
 
-The name encodes the family, generation, options and size: `m7g.large` = family **m**
-(general purpose), generation **7**, **g** = Graviton (ARM) processor, size **large**.
+The name encodes the family, generation, options and size: `m7g.large` = family m
+(general purpose), generation 7, g = Graviton (ARM) processor, size large.
 
 | Family | Optimised for | Examples | Typical use |
 |---|---|---|---|
@@ -53,9 +53,9 @@ Sizes double each step (`large` → `xlarge` → `2xlarge` …), and so does the
 
 ## Key pairs
 
-EC2 uses public-key authentication for SSH. AWS stores the **public** key and puts it
-into `~/.ssh/authorized_keys` at first boot; I keep the **private** key (`.pem`). AWS
-only shows the private key once, when the key pair is created. If it's lost, I can't
+EC2 uses public-key authentication for SSH. AWS stores the public key and puts it
+into `~/.ssh/authorized_keys` at first boot; I keep the private key (`.pem`). AWS
+only shows the private key once, when the key pair is created. If it is lost, I cannot
 log in with that key again (the fix is to attach the volume to another instance, or to
 use SSM Session Manager). Windows uses the key pair to decrypt the Administrator
 password. Today, Session Manager or EC2 Instance Connect can avoid long-lived SSH keys
@@ -63,14 +63,14 @@ entirely.
 
 ## Security groups
 
-A security group is a **stateful** virtual firewall attached to an instance's network
+A security group is a stateful virtual firewall attached to an instance's network
 interface:
 
-- rules are **allow-only** (there are no deny rules); anything not allowed is blocked;
-- default: **all inbound blocked, all outbound allowed**;
+- rules are allow-only (there are no deny rules); anything not allowed is blocked;
+- default: all inbound blocked, all outbound allowed;
 - stateful: if an inbound request is allowed, the reply goes out automatically (and the
   other way round);
-- a rule's source can be a CIDR (`203.0.113.10/32`) or **another security group**
+- a rule's source can be a CIDR (`203.0.113.10/32`) or another security group
   (e.g. "the DB group accepts 5432 only from the app group"), which keeps working when
   IPs change.
 
@@ -81,19 +81,19 @@ Typical web server: inbound 80/443 from `0.0.0.0/0`, inbound 22 only from my IP 
 
 EBS volumes are network-attached block disks for instances.
 
-- One volume lives in **one Availability Zone** and attaches to instances in that AZ
+- One volume lives in one Availability Zone and attaches to instances in that AZ
   (multi-attach only for io1/io2).
-- It **persists independently** of the instance: stopping an instance keeps the data;
+- It persists independently of the instance: stopping an instance keeps the data;
   the root volume is deleted on termination by default (`DeleteOnTermination`), extra
   volumes are not.
-- Types: **gp3** (general SSD, the default, baseline 3000 IOPS), **io2** (provisioned
-  IOPS for databases), **st1/sc1** (throughput/cold HDD).
-- **Snapshots** are incremental backups stored in S3; they can be copied to other
+- Types: gp3 (general SSD, the default, baseline 3000 IOPS), io2 (provisioned
+  IOPS for databases), st1/sc1 (throughput/cold HDD).
+- Snapshots are incremental backups stored in S3; they can be copied to other
   regions and used to create new volumes or AMIs.
 - Can be encrypted with KMS, and can be resized while in use.
 
-**Instance store** is different: physically attached, very fast, but **lost** when the
-instance stops or terminates. It's only for caches and scratch data.
+Instance store is different: physically attached, very fast, but lost when the
+instance stops or terminates. It is only for caches and scratch data.
 
 ## Public vs private IP
 
@@ -101,12 +101,12 @@ instance stops or terminates. It's only for caches and scratch data.
 |---|---|---|---|
 | Comes from | the subnet's CIDR (e.g. 172.31.x.x) | AWS's pool, if the subnet/launch asks for one | allocated to my account |
 | Reachable from | inside the VPC (and peered/VPN networks) | the internet (if an Internet Gateway route exists) | the internet |
-| Lifetime | stays for the life of the instance, through stop/start | **changes on every stop/start** | stays until I release it |
+| Lifetime | stays for the life of the instance, through stop/start | changes on every stop/start | stays until I release it |
 | Cost | free | public IPv4 is billed per hour (since 2024) | billed per hour, also while unused |
 
 The instance itself only knows its private IP; the Internet Gateway does a 1:1 NAT
-between the public and private address. Servers that don't need to be reached from the
-internet (databases, internal services) should have **only** a private IP.
+between the public and private address. Servers that do not need to be reached from the
+internet (databases, internal services) should have only a private IP.
 
 ## Instance lifecycle
 
@@ -127,11 +127,11 @@ internet (databases, internal services) should have **only** a private IP.
                   shutting-down -> terminated  (gone; root EBS deleted by default)
 ```
 
-- **Billing:** compute is charged only in `running` (per second for Linux, minimum 60 s);
+- Billing: compute is charged only in `running` (per second for Linux, minimum 60 s);
   EBS volumes and Elastic IPs keep costing money while the instance is stopped.
-- **Hibernate:** like stop, but RAM is saved to the EBS root volume so apps resume where
+- Hibernate: like stop, but RAM is saved to the EBS root volume so apps resume where
   they were.
-- **Termination protection** prevents accidental termination from the console/API.
+- Termination protection prevents accidental termination from the console/API.
 
 ## Pricing models (short)
 
@@ -160,9 +160,9 @@ aws ec2 describe-instance-types --instance-types t3.micro | head -n 70
 ![t3.micro](screenshots/01-instance-type_24BCS10244.png)
 
 The full answer is 113 lines of JSON, so I printed the first 70. For t3.micro:
-`FreeTierEligible: true`, `on-demand` and `spot` usage, **EBS-only** root device,
-`Hypervisor: nitro`, Intel `x86_64` at 2.5 GHz, **2 vCPUs (1 core × 2 threads)**,
-**1024 MiB** RAM, `InstanceStorageSupported: false` (no instance store), EBS bandwidth
+`FreeTierEligible: true`, `on-demand` and `spot` usage, EBS-only root device,
+`Hypervisor: nitro`, Intel `x86_64` at 2.5 GHz, 2 vCPUs (1 core × 2 threads),
+1024 MiB RAM, `InstanceStorageSupported: false` (no instance store), EBS bandwidth
 87 Mbps baseline / 2085 Mbps burst, network "Up to 5 Gigabit", max 2 network interfaces.
 "Burstable" shows up in the numbers too: baseline network bandwidth is 0.064 Gbps, while
 the peak is 5 Gbps.
@@ -177,10 +177,10 @@ aws ec2 describe-instance-types --instance-types t3.micro t3.large m7g.large c7i
 
 ![instance type comparison](screenshots/02-instance-type-summary_24BCS10244.png)
 
-The memory-per-vCPU ratio is what separates the families: **c7i.xlarge** has
-2 GiB per vCPU (8 GiB on 4 vCPUs), **m7g.large / t3.large** 4 GiB per vCPU (8 GiB on 2)
-and **r7i.large** 8 GiB per vCPU (16 GiB on 2). `m7g.large` is the only `arm64`
-one (the **g** = Graviton). Only t3.micro is free-tier eligible.
+The memory-per-vCPU ratio is what separates the families: c7i.xlarge has
+2 GiB per vCPU (8 GiB on 4 vCPUs), m7g.large / t3.large 4 GiB per vCPU (8 GiB on 2)
+and r7i.large 8 GiB per vCPU (16 GiB on 2). `m7g.large` is the only `arm64`
+one (the g = Graviton). Only t3.micro is free-tier eligible.
 
 ### Current Amazon Linux 2023 AMI and the region's AZs
 
@@ -205,10 +205,10 @@ owned by `amazon`, `x86_64`, root device `ebs`. Terraform can look up the same p
 - An instance is the combination of an AMI (what it boots), an instance type (how big),
   a subnet (where), a security group (who can reach it), a key pair (how I log in) and
   EBS volumes (where data lives).
-- Instance type names tell me the family and size; the vCPU-to-memory ratio is the real
-  difference between C, M and R.
+- Instance type names tell me the family and size, and the vCPU-to-memory ratio is what
+  separates C, M and R.
 - Stop and terminate are very different: stop keeps the EBS disk (and its cost) and the
   private IP but loses the public IP; terminate deletes the instance and, by default,
   its root disk.
-- Security groups are stateful allow-lists. Opening only what's needed, and referencing
+- Security groups are stateful allow-lists. Opening only what is needed, and referencing
   other security groups instead of IPs, keeps an instance's attack surface small.

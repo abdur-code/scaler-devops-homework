@@ -3,7 +3,7 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-The lecture's mini project: the same network as 06, but in its own range,
+This is the lecture's mini project: the same network as 06, but in its own range,
 `10.20.0.0/16`, with names prefixed `session19-mini-`.
 
 ```text
@@ -24,8 +24,6 @@ running in the same account. The only change to the lecture code is the same
 `default_tags` block as in 06. The EC2 extension the notes suggest at the end is in
 [09-final-project](../09-final-project/).
 
----
-
 ## Copy variables, init
 
 ```bash
@@ -36,7 +34,7 @@ terraform init
 
 ![tfvars and init](screenshots/01-tfvars-init_24BCS10244.png)
 
-## Format and validate: `fmt` fixes the lecture file
+## Format and validate (`fmt` fixes the lecture file)
 
 ```bash
 grep -n "gateway_id" main.tf
@@ -47,7 +45,7 @@ terraform validate
 
 ![fmt and validate](screenshots/02-fmt-validate_24BCS10244.png)
 
-Unlike 06, `terraform fmt` printed **`main.tf`** here, meaning it rewrote that file. The
+Unlike 06, `terraform fmt` printed `main.tf` here, meaning it rewrote that file. The
 `grep` before and after shows why: the route block in the lecture's `main.tf` had
 `gateway_id  =` with two spaces, and `fmt` aligned it to `gateway_id =`. It's only
 whitespace (the file was valid before too), so I let `fmt` do its job.
@@ -72,7 +70,7 @@ terraform apply tfplan
 
 ![apply](screenshots/04-apply_24BCS10244.png)
 
-**`Apply complete! Resources: 6 added`**, created in the same dependency order as in 06.
+`Apply complete! Resources: 6 added`, created in the same dependency order as in 06.
 
 ## Verify: outputs and state
 
@@ -125,15 +123,15 @@ yes
 
 ![destroy](screenshots/08-destroy_24BCS10244.png)
 
-**`Destroy complete! Resources: 6 destroyed`**, as the notes expect.
+`Destroy complete! Resources: 6 destroyed`, as the notes expect.
 
-**One hiccup, not a lecture bug.** My first `terraform destroy` here stopped straight
+One hiccup, not a lecture bug: my first `terraform destroy` here stopped straight
 away with `Error: Plugin did not respond ... ConfigureProvider call`. The AWS provider
 process failed while it was starting up, before it had touched anything, so the state still
 listed all six resources and they still existed in AWS. The machine was busy with other
-sessions at the time. I ran the exact same command again and it worked; the screenshot is from
-that second run. Lesson: always check `state list` after a
-destroy instead of assuming it worked.
+sessions at the time. I ran the exact same command again and it worked, and the screenshot
+is from that second run. After a destroy I check `state list` instead of assuming it
+worked.
 
 ```bash
 terraform state list
@@ -141,8 +139,6 @@ aws ec2 describe-vpcs --filters "Name=tag:Name,Values=session19-mini-vpc" --quer
 ```
 
 ![after destroy](screenshots/09-after-destroy_24BCS10244.png)
-
----
 
 ## Interview questions from the notes
 
@@ -164,7 +160,7 @@ aws ec2 describe-vpcs --filters "Name=tag:Name,Values=session19-mini-vpc" --quer
 
 - The mini project is the 06 lab with a different CIDR and names. Because everything is
   code, building a second, separate network took one `cp` and a few edits.
-- `terraform fmt` isn't just cosmetic: a team keeps diffs clean by never arguing about
-  alignment, and `fmt -check` can enforce it in CI.
+- `terraform fmt` keeps diffs clean because nobody has to argue about alignment, and
+  `fmt -check` can enforce it in CI.
 - A failed command can leave everything exactly as it was. `terraform state list` and an
-  AWS CLI query are a quick way to know for sure instead of guessing.
+  AWS CLI query are a quick way to find out for sure.

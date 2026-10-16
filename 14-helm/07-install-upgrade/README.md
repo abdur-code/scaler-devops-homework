@@ -1,13 +1,12 @@
-# Install and Upgrade, plus `helm status` and `helm get`
+# Install and upgrade, plus `helm status` and `helm get`
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
 Lecture topic `07-install-upgrade`. `helm install` creates a release, `helm upgrade`
-changes it, and each one writes a new **revision**. For Task 1 I also added
-`helm status`, `helm get values/manifest/all` and a look at where Helm stores revisions,
-because the notes don't cover them and this release (with two revisions) is a good place
-to show them.
+changes it, and each one writes a new revision. For Task 1 I also added `helm status`,
+`helm get values/manifest/all` and a look at where Helm stores revisions. The notes don't
+cover them, and this release (with two revisions) was a convenient one to show them on.
 
 ```text
 07-install-upgrade/
@@ -36,7 +35,7 @@ cat app-chart/templates/deployment.yaml
 ![chart files](screenshots/02-chart-files_24BCS10244.png)
 
 The lecture repo's `deployment.yaml` has a `containerPort: 80` that the README version
-leaves out. It makes no difference to how the chart behaves; I kept the repo file.
+leaves out. It makes no difference to how the chart behaves, so I kept the repo file.
 
 ## 2. Install (`helm install`)
 
@@ -78,8 +77,8 @@ helm status web-app --revision 1
 ![helm status](screenshots/07-helm-status_24BCS10244.png)
 
 `helm status` shows the summary for the current revision (2, `deployed`). With
-`--revision 1` I get the old one, now `superseded`. It's the same block `helm install`
-prints, so it's the quick way to see a release's state and NOTES again later.
+`--revision 1` I get the old one, now `superseded`. It prints the same block as
+`helm install`, so it is a quick way to see a release's state and NOTES again later.
 
 ## 5. Addition: `helm get values`, `helm get manifest`, `helm get all`
 
@@ -91,10 +90,10 @@ helm get values web-app --all
 
 ![helm get values](screenshots/08-helm-get-values_24BCS10244.png)
 
-- Revision 2's **user-supplied** values are just `replicaCount: 3`, the `--set` I typed.
-- Revision 1 has none (`null`); it was a plain install.
-- `--all` shows the **computed** values: chart defaults merged with my overrides
-  (`nginx`, `"1.24"`, `3`).
+- Revision 2's user-supplied values are just `replicaCount: 3`, the `--set` I typed.
+- Revision 1 has none (`null`) because it was a plain install.
+- `--all` shows the computed values: chart defaults merged with my overrides (`nginx`,
+  `"1.24"`, `3`).
 
 ```bash
 helm get manifest web-app
@@ -102,9 +101,9 @@ helm get manifest web-app
 
 ![helm get manifest](screenshots/09-helm-get-manifest_24BCS10244.png)
 
-The exact YAML Helm sent to the cluster for this revision, with every template already
-filled in (`replicas: 3`, `image: "nginx:1.24"`). It's the stored, applied version of
-what `helm template` prints.
+This is the exact YAML Helm sent to the cluster for this revision, with every template
+already filled in (`replicas: 3`, `image: "nginx:1.24"`). It is the stored, applied version
+of what `helm template` prints.
 
 ```bash
 helm get all web-app
@@ -112,8 +111,8 @@ helm get all web-app
 
 ![helm get all](screenshots/10-helm-get-all_24BCS10244.png)
 
-Everything for the revision in one place: status, chart and version, user-supplied values,
-computed values, hooks (none) and the manifest.
+This shows everything for the revision in one place: status, chart and version,
+user-supplied values, computed values, hooks (none) and the manifest.
 
 ## 6. Release history (`helm history`) and where it is stored
 
@@ -124,11 +123,11 @@ kubectl get secrets -l owner=helm
 
 ![history and secrets](screenshots/11-history-and-secrets_24BCS10244.png)
 
-Revision 1 `superseded` / `Install complete`, revision 2 `deployed` /
+Revision 1 is `superseded` / `Install complete` and revision 2 is `deployed` /
 `Upgrade complete`. Each revision is a Secret of type `helm.sh/release.v1` in the
-release's namespace (`sh.helm.release.v1.web-app.v1`, `.v2`). That is the "release state
-stored as Kubernetes Secrets" from the Helm 2 vs 3 notes, and it's what `helm get`,
-`helm history` and `helm rollback` read.
+release's namespace (`sh.helm.release.v1.web-app.v1`, `.v2`). This is the "release state
+stored as Kubernetes Secrets" from the Helm 2 vs 3 notes, and `helm get`, `helm history`
+and `helm rollback` all read it.
 
 ## 7. install vs upgrade vs upgrade --install
 
@@ -156,12 +155,12 @@ helm list
 ![upgrade --install effects](screenshots/13-upgrade-install-effects_24BCS10244.png)
 
 `helm upgrade --install new-app` printed `Release "new-app" does not exist. Installing it
-now.`, so the same command covers both cases. That's why CI/CD pipelines use it.
+now.`, so the same command covers both cases, which is why CI/CD pipelines use it.
 
-Something I didn't expect: revision 3 was run **without** `--set`, yet it still has
+Something I didn't expect: revision 3 was run without `--set`, yet it still has
 `replicaCount: 3` and the Deployment stayed at 3/3. When an upgrade gets no values at all
-(no `-f`, no `--set`), Helm 3 reuses the previous revision's values. As soon as you pass
-any value, it starts from the chart defaults plus only what you passed. That second rule
+(no `-f`, no `--set`), Helm 3 reuses the previous revision's values. As soon as any value
+is passed, it starts from the chart defaults plus only what was passed. That second rule
 is what goes wrong in the [mini project](../mini-project/README.md#problem-found-step-13-quietly-drops-the-production-values).
 
 ## 8. Uninstall
@@ -175,16 +174,16 @@ kubectl get secrets -l owner=helm
 ![uninstall](screenshots/14-uninstall_24BCS10244.png)
 
 `helm uninstall` takes several release names at once. The revision Secrets are deleted
-too, so the history is gone. (`--keep-history` would keep them.)
+too, so the history is gone (`--keep-history` would keep them).
 
 ## What I understood
 
 - Every install, upgrade and rollback is a numbered revision, stored as a Secret in the
   release's namespace. That stored history is what makes rollback possible.
-- `helm get values` shows only what I supplied; `--all` shows the merged result. Comparing
-  the two is the fastest way to answer "what is actually configured?".
-- `helm get manifest` is the source of truth for what Helm applied. It's what I'd diff
-  against `kubectl get -o yaml` if I suspected someone had edited objects by hand.
+- `helm get values` shows only what I supplied and `--all` shows the merged result.
+  Comparing the two answers "what is actually configured?".
+- `helm get manifest` shows what Helm applied. I would diff it against
+  `kubectl get -o yaml` if I suspected someone had edited objects by hand.
 - `helm upgrade --install` is safe to run repeatedly, so it fits pipelines. Because an
   upgrade with any `--set` starts again from the chart defaults, a pipeline should always
   pass its full values file.

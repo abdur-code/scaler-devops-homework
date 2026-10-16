@@ -8,8 +8,6 @@ kubelet tried to do with a resource and whether it worked.
 
 Files: `pod.yaml`, an `nginx:1.27` Pod called `events-demo`.
 
----
-
 ## 1. Create the Pod and list events
 
 ```bash
@@ -21,7 +19,7 @@ kubectl get events
 ![get events](screenshots/01-apply-get-events_24BCS10244.png)
 
 Events are namespaced and kept for a while after the object is gone, so the list also
-has the Pods from sections 01–04, each with `Scheduled` → `Pulled` → `Created` →
+has the Pods from sections 01 to 04, each with `Scheduled` → `Pulled` → `Created` →
 `Started` → `Killing`. Without sorting, kubectl groups them by object name
 (`describe-demo`, `events-demo`, `exec-demo`, ...), not by time.
 
@@ -59,8 +57,8 @@ kubectl get events --field-selector type=Warning
 
 `kubectl events --for` is the newer command. It sorts by time by default and filters to
 one object. The Warning filter from the lecture's "Key Learning" returned
-`No resources found`: nothing has failed in this namespace yet. Later sections use the same
-filter to pull out just the failures (07, mini-project, scenarios).
+`No resources found`, since nothing has failed in this namespace yet. Later sections use the
+same filter to pull out only the failures (07, mini-project, scenarios).
 
 ## 5. Watch events live
 
@@ -79,15 +77,13 @@ kubectl delete -f pod.yaml
 The watch first printed the existing events, then a new `Killing ... Stopping container
 nginx` line for `events-demo` with age `0s` as soon as the delete ran.
 
----
-
 ## What I understood
 
-- Events answer "what did Kubernetes try, and what happened?". The `Reason` column
+- Events show what Kubernetes tried and what happened. The `Reason` column
   (`FailedScheduling`, `FailedMount`, `BackOff`, `Failed`) usually names the problem.
-- `--sort-by=.lastTimestamp` or `kubectl events` gives a proper timeline;
+- `--sort-by=.lastTimestamp` or `kubectl events` gives a proper timeline, and
   `--field-selector type=Warning` cuts out the noise during an incident.
-- Events outlive their Pods but expire after about an hour, so they're useful soon
-  after a problem, not days later.
-- The source column matters: the scheduler reports placement problems; the kubelet
-  reports image, volume and container problems.
+- Events outlive their Pods but expire after about an hour, so they help soon
+  after a problem and not days later.
+- The source column tells me who reported it: the scheduler reports placement problems
+  and the kubelet reports image, volume and container problems.

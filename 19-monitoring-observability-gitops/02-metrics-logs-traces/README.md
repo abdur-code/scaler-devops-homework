@@ -46,7 +46,7 @@ The Pod was `Running` after 1 s because `busybox:1.36` was already on the node. 
 `session20-demo-6698db549f-xgbtv` is the Deployment name, then the ReplicaSet's
 pod-template hash, then a random suffix.
 
-## 3. Logs: *what happened*
+## 3. Logs: what happened
 
 ```bash
 kubectl logs deployment/session20-demo
@@ -57,7 +57,7 @@ kubectl logs deployment/session20-demo --timestamps --tail=4
 
 Exactly the lines the notes expect: one `Session 20 observability demo started`, then a
 `Request received` / `Health check OK` pair every 10 s. `--timestamps` adds the time the
-kubelet recorded for each line (19:04:58, 19:05:08), which is how you line logs up with a
+kubelet recorded for each line (19:04:58, 19:05:08), which is how logs can be lined up with a
 metric spike. These are only `echo` lines. The "Health check OK" text doesn't check
 anything, as section 6 shows.
 
@@ -72,12 +72,12 @@ kubectl describe deployment session20-demo
 `describe` shows the labels and selector, `Replicas: 1 desired | 1 updated | 1 total | 1
 available`, the image and the full shell command, the `Available` / `Progressing`
 conditions, and the event `Scaled up replica set … from 0 to 1`. The Pod template has no
-probes at all (`Port: <none>`, no Liveness/Readiness lines). That matters in section 6.
+probes at all (`Port: <none>`, no Liveness/Readiness lines), which matters in section 6.
 
 ## 5. Addition: CPU and memory with `kubectl top`
 
 The notes describe CPU and memory as metrics but don't measure them. metrics-server is
-already enabled in my minikube, so:
+already enabled in my minikube, so I ran:
 
 ```bash
 kubectl top pods
@@ -89,13 +89,13 @@ kubectl top node
 
 The demo Pod uses `1m` CPU (1/1000 of a core) and `3Mi` memory, since it sleeps most of
 the time. The node is at `153m` CPU (1 %) and `1264Mi` memory (15 %). `top` is a current
-snapshot from metrics-server with no history. For history you need Prometheus, as in
+snapshot from metrics-server with no history. For history Prometheus is needed, as in
 [`03-prometheus`](../03-prometheus/).
 
 ## 6. Addition: application health with a readiness probe
 
-**Running is not the same as serving.** The Service sends traffic to port 8080, but the
-container is a shell loop that never opens a port. Kubernetes still considers it ready:
+Running is not the same as serving. The Service sends traffic to port 8080, but the
+container is a shell loop that never opens a port, and Kubernetes still considers it ready:
 
 ```bash
 kubectl get pods -o wide
@@ -111,7 +111,7 @@ container counts as ready as soon as it starts. (The `couldn't attach` warning i
 `wget` finished before `kubectl run -i` could attach, so kubectl printed the output from
 the logs instead.)
 
-**Add a readiness probe** on the port the Service uses:
+I added a readiness probe on the port the Service uses:
 
 ```yaml
 # health/readiness-patch.yaml
@@ -158,9 +158,6 @@ timeout). `rollout undo` goes back to the previous template and the stuck Pod is
 The warning about `last-applied-configuration` means the file in `k8s-demo/` no longer
 matches what is running. That is fine here, because the next step deletes everything.
 
-So the readiness probe is what turned "the app doesn't answer on 8080" into a signal
-Kubernetes acts on: no traffic to the broken Pod, and the rollout stopped.
-
 ## 7. Clean up
 
 ```bash
@@ -178,12 +175,12 @@ which as PID 1 ignores SIGTERM. The kubelet therefore waits the full
 
 ## What I understood
 
-- A log tells me **what** happened (`Request received`), a metric tells me **how much**
-  (`1m` CPU, `3Mi` memory), and a trace would tell me **where** a request spent its time.
+- A log tells me what happened (`Request received`), a metric tells me how much
+  (`1m` CPU, `3Mi` memory), and a trace would tell me where a request spent its time.
   This demo has no traces because nothing in it is instrumented.
 - `kubectl logs` works without setup because Kubernetes captures stdout/stderr. The lines
   are lost with the Pod unless they are shipped somewhere.
 - `kubectl top` is a quick live view from metrics-server. It has no history and no alerting.
 - A Pod without a readiness probe is "Ready" as soon as its process starts, even if it
   can't serve anything. The readiness probe made the failure visible (`0/1`,
-  `ready=false`, `Unhealthy` events) and protected the Service from the broken Pod.
+  `ready=false`, `Unhealthy` events) and kept traffic away from the broken Pod.

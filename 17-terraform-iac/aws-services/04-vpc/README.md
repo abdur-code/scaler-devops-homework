@@ -3,9 +3,9 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Session 18, Task 2 (AWS services research). Written in my own words. For the CLI part
-I only *read* the account's **default VPC** (`vpc-090278abf2efd373a`), which AWS creates
-in every region. I didn't create or change any network resource.
+Session 18, Task 2 (AWS services research). For the CLI part I only read the account's
+default VPC (`vpc-090278abf2efd373a`), which AWS creates in every region. I did not
+create or change any network resource.
 
 ## What a VPC is
 
@@ -42,14 +42,14 @@ bits are fixed; the rest are host addresses.
 | `0.0.0.0/0` | all of IPv4 | "anywhere", e.g. the default route |
 
 VPCs should use private (RFC 1918) ranges, `10.0.0.0/8`, `172.16.0.0/12` or
-`192.168.0.0/16`, and should **not overlap** with other VPCs or the office network if
-they will ever be peered or connected by VPN. AWS reserves **5 addresses in every
-subnet** (network address, VPC router, DNS, one for future use, broadcast), which is why
+`192.168.0.0/16`, and should not overlap with other VPCs or the office network if
+they will ever be peered or connected by VPN. AWS reserves 5 addresses in every
+subnet (network address, VPC router, DNS, one for future use, broadcast), which is why
 a /20 shows 4,091 free IPs below, not 4,096.
 
 ## Subnets
 
-A subnet is a slice of the VPC's CIDR that lives in **exactly one AZ**. Resources are
+A subnet is a slice of the VPC's CIDR that lives in exactly one AZ. Resources are
 launched into subnets, and high availability means spreading them over subnets in at
 least two AZs. Each subnet is associated with one route table and one network ACL.
 
@@ -58,12 +58,12 @@ least two AZs. Each subnet is associated with one route table and one network AC
 A route table is a list of "destination → target" rules used by the subnets associated
 with it. The most specific matching route wins.
 
-- Every route table has a **`local`** route for the VPC CIDR, so all subnets in a VPC
+- Every route table has a `local` route for the VPC CIDR, so all subnets in a VPC
   can always reach each other.
-- `0.0.0.0/0 → igw-…` makes a subnet **public**;
+- `0.0.0.0/0 → igw-…` makes a subnet public;
 - `0.0.0.0/0 → nat-…` gives a private subnet outbound-only internet;
 - other targets: VPC peering, Transit Gateway, VPN gateway, VPC endpoints (e.g. S3
-  gateway endpoint, so S3 traffic doesn't go through NAT).
+  gateway endpoint, so S3 traffic does not go through NAT).
 
 ## Internet Gateway (IGW)
 
@@ -73,32 +73,32 @@ public IP to the private one. It costs nothing by itself, and one VPC can have o
 
 ## NAT Gateway
 
-A managed NAT device placed in a **public** subnet that lets instances in **private**
+A managed NAT device placed in a public subnet that lets instances in private
 subnets start connections to the internet (OS updates, calling external APIs, pulling
 images) while nothing on the internet can start a connection to them.
 
-- It is **zonal**: for high availability, put one per AZ and point each AZ's private
+- It is zonal: for high availability, put one per AZ and point each AZ's private
   route table at its own NAT.
-- It **costs money**: an hourly charge per NAT Gateway plus a per-GB processing charge,
+- It costs money: an hourly charge per NAT Gateway plus a per-GB processing charge,
   even when idle. It is one of the most common surprise bills in practice, which is why
   my homework account checks for NAT gateways in its final cleanup.
 - Alternatives: VPC endpoints for AWS services (S3, DynamoDB, ECR), or no internet at all.
 
 ## Security groups
 
-Stateful, allow-only firewalls attached to **network interfaces** (instances, RDS,
+Stateful, allow-only firewalls attached to network interfaces (instances, RDS,
 load balancers…). Return traffic is allowed automatically, and rules can reference other
 security groups. Details are in the [EC2 page](../02-ec2/README.md#security-groups).
 
 ## Network ACLs (NACLs)
 
-Stateless firewalls attached to **subnets**:
+Stateless firewalls attached to subnets:
 
 | | Security group | Network ACL |
 |---|---|---|
 | Applies to | an ENI / instance | a whole subnet |
-| State | **stateful** (return traffic automatic) | **stateless** (return traffic needs its own rule, usually ephemeral ports 1024-65535) |
-| Rules | allow only | allow **and deny** |
+| State | stateful (return traffic automatic) | stateless (return traffic needs its own rule, usually ephemeral ports 1024-65535) |
+| Rules | allow only | allow and deny |
 | Evaluation | all rules together | in order of rule number, first match wins |
 | Default | inbound nothing, outbound all | default NACL allows everything both ways |
 
@@ -107,8 +107,8 @@ subnet; day-to-day access control is done with security groups.
 
 ## Public vs private subnets
 
-AWS has no "public" checkbox. A subnet **is public because its route table sends
-`0.0.0.0/0` to an Internet Gateway**. Instances there also need a public IP to be
+AWS has no "public" checkbox. A subnet is public because its route table sends
+`0.0.0.0/0` to an Internet Gateway. Instances there also need a public IP to be
 reachable (`MapPublicIpOnLaunch` assigns one automatically).
 
 | | Public subnet | Private subnet |
@@ -147,13 +147,13 @@ aws ec2 describe-internet-gateways --filters Name=attachment.vpc-id,Values=vpc-0
 
 ![default vpc parts](screenshots/02-default-vpc-parts_24BCS10244.png)
 
-- **Subnets:** one `/20` per AZ (`172.31.0.0/20` in 1b, `172.31.16.0/20` in 1c,
-  `172.31.32.0/20` in 1a), each with **4091** free IPs (4096 − 5 reserved) and
+- Subnets: one `/20` per AZ (`172.31.0.0/20` in 1b, `172.31.16.0/20` in 1c,
+  `172.31.32.0/20` in 1a), each with 4091 free IPs (4096 − 5 reserved) and
   `AutoPublicIP: True`.
-- **Route table:** `172.31.0.0/16 → local` and `0.0.0.0/0 → igw-003ab04ef4e8c0287`.
-- **IGW:** `igw-003ab04ef4e8c0287`, attached to the default VPC.
+- Route table: `172.31.0.0/16 → local` and `0.0.0.0/0 → igw-003ab04ef4e8c0287`.
+- IGW: `igw-003ab04ef4e8c0287`, attached to the default VPC.
 
-Together this proves the definition above: every default subnet is a **public** subnet,
+Together this proves the definition above: every default subnet is a public subnet,
 because its route table points `0.0.0.0/0` at an Internet Gateway and instances get a
 public IP automatically. That is handy for quick tests and the reason real workloads use
 their own VPC with private subnets.
@@ -169,21 +169,22 @@ aws ec2 describe-network-acls --filters Name=vpc-id,Values=vpc-090278abf2efd373a
 
 ![sg and nacl](screenshots/03-sg-nacl_24BCS10244.png)
 
-- The **default security group** allows inbound traffic only from **itself**
+- The default security group allows inbound traffic only from itself
   (`sg-061264c78645d5aa3` references its own ID) and all outbound to `0.0.0.0/0`.
-  That's an example of a security group used as a source.
-- The **default NACL** shows the NACL model: numbered rules evaluated in order, rule
+  This is an example of a security group used as a source.
+- The default NACL shows the NACL model: numbered rules evaluated in order, rule
   `100 allow` all protocols (`-1`) from/to `0.0.0.0/0` in each direction, and the fixed
   catch-all rule `32767 deny` (shown as `*` in the console) at the end. Because rule 100
-  allows everything, the default NACL doesn't filter anything; filtering is left to
+  allows everything, the default NACL does not filter anything, and filtering is left to
   security groups.
 
 ## What I understood
 
 - A VPC is a private IP range in one region. Subnets put pieces of it into specific AZs,
   and route tables decide where each subnet's traffic can go.
-- "Public" and "private" are a property of the route table (IGW vs NAT/none), not of the
-  subnet itself. The default VPC is entirely public, which I saw in its routes.
+- "Public" and "private" come from the route table (IGW vs NAT/none), and the subnet
+  itself has no such setting. The default VPC is entirely public, which I saw in its
+  routes.
 - NAT Gateways give private subnets outbound internet but bill by the hour, so they must
   be deleted after labs.
 - Security groups (stateful, per instance, allow-only) and NACLs (stateless, per subnet,

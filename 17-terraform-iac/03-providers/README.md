@@ -37,7 +37,7 @@ has no hardcoded environment details. My only changes to `main.tf` are the bucke
 ## 1. Authentication
 
 The notes say to run `aws configure`. That command prompts for the access key ID and
-secret key and echoes the existing ones, so I did **not** run it on screen. The CLI was
+secret key and echoes the existing ones, so I did not run it on screen. The CLI was
 already configured for the homework IAM user, so I proved it works with two read-only
 commands instead:
 
@@ -53,7 +53,7 @@ Credentials come from the shared credentials file (`~/.aws/credentials`), region
 `arn:aws:iam::187004426521:user/homework-terraform`. The Terraform AWS provider uses
 the same credential chain as the CLI, so this is all Terraform needs.
 
-**Never put keys in the provider block** (`access_key = "..."`, `secret_key = "..."`).
+Keys do not belong in the provider block (`access_key = "..."`, `secret_key = "..."`).
 The `.tf` files go to Git, and anyone with the repo would then have the account.
 
 ## 2. Init and validate
@@ -101,13 +101,14 @@ terraform state list
 
 ![destroy](screenshots/05-destroy_24BCS10244.png)
 
-One resource destroyed; the state list is empty.
+One resource was destroyed and the state list is empty.
 
 ## What I understood
 
-- `source` says *which* plugin (namespace/type on the registry) and `version` says
-  *which versions are acceptable*; the lock file then records the exact one that was
-  picked (6.67.0) so every run uses the same build.
-- The provider block configures *how* to connect (region, tags), not *what* to create.
+- `source` names the plugin (namespace/type on the registry) and `version` sets which
+  versions are acceptable. The lock file then records the exact one that was picked
+  (6.67.0) so every run uses the same build.
+- The provider block configures how to connect (region, tags) and does not create
+  anything.
 - Credentials belong to the environment (CLI profile, environment variables, SSO or an
-  IAM role), never to the Terraform code.
+  IAM role) and never go in the Terraform code.

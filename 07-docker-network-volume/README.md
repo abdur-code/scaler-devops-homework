@@ -1,15 +1,13 @@
-# Docker Networking & Volumes
+# Docker networking and volumes
 
-All four tasks were run and the output below is copied as it appeared.
-
----
+I ran all four tasks and copied the output below as it appeared.
 
 ## Task 1: Container networking
 
 ### The plan
 
 A frontend, a backend and a MySQL database. The backend sits on two networks so it can
-reach both sides. The frontend must **not** be able to reach the database at all.
+reach both sides. The frontend must not be able to reach the database at all.
 
 ```text
 web-net    frontend + backend
@@ -20,8 +18,8 @@ data-net   database
 | Container | Image | Networks |
 |---|---|---|
 | frontend | `alpine` | web-net |
-| backend | `alpine` | web-net **and** app-net |
-| database | `mysql:8.0` | app-net **and** data-net |
+| backend | `alpine` | web-net and app-net |
+| database | `mysql:8.0` | app-net and data-net |
 
 ### Create the three networks
 
@@ -44,7 +42,7 @@ f01c67762f0a   data-net   bridge    local
 ```
 
 `bridge`, `host` and `none` are the three networks Docker always provides. The three I
-created use the **bridge** driver, which is the default for a single host.
+created use the `bridge` driver, which is the default for a single host.
 
 ### Create the containers
 
@@ -57,10 +55,10 @@ docker run -d --name database --network app-net -e MYSQL_ROOT_PASSWORD=rootpass 
 docker network connect data-net database
 ```
 
-`docker run` accepts only **one** `--network`. To put a container on a second network
-you use `docker network connect` afterwards, which is how the backend ends up on two.
-`sleep infinity` is just to keep the Alpine containers alive; without a long-running
-process they would exit immediately.
+`docker run` accepts only one `--network`. To put a container on a second network I used
+`docker network connect` afterwards, which is how the backend ends up on two.
+`sleep infinity` keeps the Alpine containers alive, since without a long-running process
+they would exit immediately.
 
 ```text
 $ docker ps
@@ -78,10 +76,10 @@ backend   app-net=172.19.0.2   web-net=172.18.0.3
 database  app-net=172.19.0.3   data-net=172.20.0.2
 ```
 
-The backend has **two IP addresses**, one per network. Each network is its own subnet —
-`172.18`, `172.19`, `172.20` — carved out by Docker automatically.
+The backend has two IP addresses, one per network. Each network is its own subnet
+(`172.18`, `172.19`, `172.20`), which Docker carved out automatically.
 
-### Test 1: frontend → backend (both on web-net)
+### Test 1: frontend to backend (both on web-net)
 
 ```text
 $ docker exec frontend ping -c 2 backend
@@ -93,12 +91,12 @@ PING backend (172.18.0.3): 56 data bytes
 2 packets transmitted, 2 packets received, 0% packet loss
 ```
 
-Works. Note I pinged the **name** `backend`, not an IP. Docker runs an embedded DNS
-server on every user-created network, so containers find each other by container name.
-That is worth knowing: on the *default* `bridge` network this does not work, name
-resolution between containers only comes with networks you create yourself.
+That works. I pinged the name `backend`, not an IP. Docker runs an embedded DNS server on
+every user-created network, so containers find each other by container name. On the
+default `bridge` network this does not work, because name resolution between containers
+only comes with networks I create myself.
 
-### Test 2: backend → database (both on app-net)
+### Test 2: backend to database (both on app-net)
 
 ```text
 $ docker exec backend ping -c 2 database
@@ -113,11 +111,10 @@ $ docker exec backend nc -z -v -w 3 database 3306
 database (172.19.0.3:3306) open
 ```
 
-Ping proves the route exists; `nc -z` on **3306** proves the MySQL port is actually
-accepting connections, which is what a real application would need. Ping alone would not
-tell you that.
+Ping shows the route exists. `nc -z` on port 3306 shows the MySQL port is accepting
+connections, which is what a real application would need and ping alone cannot tell.
 
-### Test 3: frontend → database (no shared network)
+### Test 3: frontend to database (no shared network)
 
 ```text
 $ docker exec frontend ping -c 2 database
@@ -129,10 +126,10 @@ nc: bad address 'database'
 exit code: 1
 ```
 
-**This is the important result.** The frontend cannot even *resolve* the name
+This is the result the setup was for. The frontend cannot even resolve the name
 `database`, let alone connect to it. The two share no network, so Docker's DNS on
-`web-net` has no record of it. The isolation happens at name resolution, before any
-packet is sent.
+`web-net` has no record of it. The isolation happens at name resolution, before any packet
+is sent.
 
 ### Members of each network
 
@@ -144,20 +141,17 @@ data-net  database(172.20.0.2/16)
 
 ### What I understood
 
-The default bridge network lets every container talk to every other one. Fine for
-experimenting, wrong for a real application.
+The default bridge network lets every container talk to every other one. That is fine for
+experimenting but wrong for a real application.
 
-Creating separate networks and attaching each container **only** to the networks it
-actually needs is how you keep a database private. The frontend can be exposed to the
-internet and still have no route whatsoever to the database, because the only thing that
-can see both is the backend. That is defence in depth at the network layer, and it costs
-three `docker network create` commands.
+Creating separate networks and attaching each container only to the networks it needs
+keeps the database private. The frontend can be exposed to the internet and still have no
+route to the database, because the only container that can see both is the backend. This
+took three `docker network create` commands.
 
-`data-net` in this setup has only the database on it, which looks pointless — and for
-this exercise it is. In a real system it is where a backup job or a monitoring agent
-would attach, needing the database but nothing else.
-
----
+`data-net` has only the database on it, which looks pointless, and here it
+is. In a real system a backup job or a monitoring agent that needs the database and
+nothing else would attach there.
 
 ## Task 2: Host network
 
@@ -188,13 +182,12 @@ AH00558: httpd: Could not reliably determine the server's fully qualified domain
 [core:notice] AH00094: Command line: 'httpd -D FOREGROUND'
 ```
 
-The first thing to notice is that the **`PORTS` column is empty**. With host networking
-there is no port mapping, because there is no separate network namespace to map between.
-The container uses the host's network stack directly, so Apache is simply listening on
-the host's port 80.
+The `PORTS` column is empty. With host networking there is no port mapping, because there
+is no separate network namespace to map between. The container uses the host's network
+stack directly, so Apache is listening on the host's port 80.
 
-I used no `-p` flag at all. Combining `-p` with `--network host` does nothing and Docker
-warns about it.
+I used no `-p` flag. Combining `-p` with `--network host` does nothing, and Docker warns
+about it.
 
 ### Accessing it on port 80
 
@@ -221,10 +214,9 @@ $ docker run --rm curlimages/curl -s -o /dev/null -w "%{http_code}\n" -m 5 http:
 000
 ```
 
-The same request from a **normal bridge container** gets nothing, because that
-container's `localhost` is its own loopback inside its own namespace. The host-network
-container gets the Apache page from the identical address. That difference *is* host
-networking.
+The same request from a normal bridge container gets nothing, because that container's
+`localhost` is its own loopback inside its own namespace. The host-network container gets
+the Apache page from the identical address, and that difference is host networking.
 
 ### The macOS caveat, and why I ran it twice
 
@@ -234,10 +226,10 @@ $ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:80    # from macOS
 ```
 
 On Linux, `--network host` means the actual machine, so the page opens at
-`http://localhost` in your browser immediately. On Docker Desktop for Mac, containers
-run inside a small Linux VM, so "the host" in host networking is **that VM**, not macOS.
-`curl` from the Mac terminal returns `000` while `curl` from inside the VM returns `200`,
-which is exactly what the two commands above show.
+`http://localhost` in a browser straight away. On Docker Desktop for Mac, containers run
+inside a small Linux VM, so "the host" in host networking is that VM, not macOS. `curl`
+from the Mac terminal returns `000` while `curl` from inside the VM returns `200`, which
+is what the two commands above show.
 
 So to also get a browser screenshot on port 80, I ran the same image the normal bridge
 way with the port published:
@@ -266,17 +258,15 @@ $ curl http://localhost:80
 
 ### What I understood
 
-Host networking removes the network isolation layer. It is faster, because there is no
-NAT and no userland proxying, and it is the right choice for things that need to see the
-real network — a monitoring agent that reads host interfaces, or a service that uses a
-wide range of ports and would be painful to map one by one.
+Host networking removes the network isolation layer. It is faster, because there is no NAT
+and no userland proxying, and it suits things that need to see the real network, such as a
+monitoring agent that reads host interfaces or a service that uses a wide range of ports
+and would be painful to map one by one.
 
-The costs: the container can bind any host port, there is no isolation from the host's
-network, two containers cannot both take port 80, and it behaves differently on Mac and
-Windows than on Linux. For an ordinary application, bridge plus `-p` is the right
+The costs are that the container can bind any host port, there is no isolation from the
+host's network, two containers cannot both take port 80, and it behaves differently on Mac
+and Windows than on Linux. For an ordinary application, bridge plus `-p` is the better
 default.
-
----
 
 ## Task 3: Bind mount
 
@@ -286,7 +276,7 @@ default.
 mkdir -p bind-mount/site
 ```
 
-[bind-mount/site/index.html](bind-mount/site/index.html) has **Hello students** as its
+[bind-mount/site/index.html](bind-mount/site/index.html) has "Hello students" as its
 heading.
 
 ```text
@@ -306,10 +296,9 @@ docker run -d --name bind-nginx -p 8107:80 \
   nginx:1.27-alpine
 ```
 
-The source path must be **absolute**, which is why `$(pwd)` is there — a relative path
-would be interpreted as a named volume instead. The `:ro` makes the mount read-only
-inside the container, so nginx can serve the files but not modify them, which is a good
-default for a website.
+The source path must be absolute, which is why `$(pwd)` is there: a relative path would be
+read as a named volume instead. The `:ro` makes the mount read-only inside the container,
+so nginx can serve the files but not modify them, which is a good default for a website.
 
 ```text
 $ docker inspect bind-nginx --format "{{range .Mounts}}...{{end}}"
@@ -330,12 +319,12 @@ $ docker exec bind-nginx ls -l /usr/share/nginx/html
 -rw-r--r--    1 root     root           829 Sep  3 17:15 index.html
 ```
 
-The container sees the same 829-byte file that is on my Mac. It was never copied — both
-sides are looking at the same bytes on disk.
+The container sees the same 829-byte file that is on my Mac. It was never copied, since
+both sides look at the same bytes on disk.
 
 ![Bind mount, before the edit](screenshots/bind-mount-before.png)
 
-The read-only flag is real, not advisory:
+The read-only flag is enforced:
 
 ```text
 $ docker exec bind-nginx sh -c "echo hacked >> /usr/share/nginx/html/index.html"
@@ -362,13 +351,14 @@ RestartCount = 0
 ```
 
 The new content is being served, the status still says `Up 23 seconds` counting from the
-original start, and `RestartCount` is 0. **No restart, no rebuild, no `docker cp`.**
+original start, and `RestartCount` is 0. There was no restart, no rebuild and no
+`docker cp`.
 
 ![Bind mount, after editing on the host](screenshots/bind-mount-after.png)
 
 ### Bind mount vs named volume
 
-To make the contrast concrete I also created a named volume:
+To compare, I also created a named volume:
 
 ```text
 $ docker volume create demo-vol
@@ -382,13 +372,12 @@ $ docker volume inspect demo-vol --format '{{.Name}} -> {{.Mountpoint}} (driver 
 demo-vol -> /var/lib/docker/volumes/demo-vol/_data (driver local)
 ```
 
-The data survived the first container being removed, because the volume outlives it. But
-notice the mountpoint: `/var/lib/docker/volumes/...`, a path **Docker** owns, not one I
-chose.
+The data survived the first container being removed, because the volume outlives it. The
+mountpoint is `/var/lib/docker/volumes/...`, a path Docker owns and not one I chose.
 
 | | Bind mount | Named volume |
 |---|---|---|
-| Where the data lives | any path you pick on the host | `/var/lib/docker/volumes/...` |
+| Where the data lives | any path I pick on the host | `/var/lib/docker/volumes/...` |
 | Referred to by | absolute path | name |
 | Host layout matters | yes | no |
 | Managed by Docker | no | yes, `docker volume` commands |
@@ -396,26 +385,24 @@ chose.
 
 ### What I understood
 
-A bind mount points a path inside the container at a real directory on the host. There
-is no copy: both sides see the same files, so an edit on the host is visible to the
-container immediately. That is why the change appeared with no restart, and it is why
-bind mounts are the standard way to develop inside a container — mount your source, save
-a file, refresh the browser.
+A bind mount points a path inside the container at a real directory on the host. There is
+no copy: both sides see the same files, so an edit on the host is visible to the container
+immediately. That is why the change appeared with no restart, and why bind mounts are the
+usual way to develop inside a container: mount the source, save a file, refresh the
+browser.
 
 Named volumes are the better choice in production, especially for database data, because
-they do not depend on the host's directory layout, Docker can back them up and move
-them, and permissions are handled consistently across Linux, Mac and Windows.
-
----
+they do not depend on the host's directory layout, Docker can back them up and move them,
+and permissions are handled consistently across Linux, Mac and Windows.
 
 ## Task 4: Overlay networks
 
 ### What they are
 
-Bridge networks only work on **one** machine. An overlay network lets containers on
-several different Docker hosts talk to each other as if they were on one local network.
-It does this by wrapping container traffic in **VXLAN** packets and sending them over
-the real network between hosts — hence "overlay", a virtual network laid on top of the
+Bridge networks only work on one machine. An overlay network lets containers on several
+different Docker hosts talk to each other as if they were on one local network. It does
+this by wrapping container traffic in VXLAN packets and sending them over the real network
+between hosts, which is why it is called an overlay: a virtual network laid on top of the
 physical one.
 
 ### They need a cluster
@@ -430,7 +417,7 @@ or "docker swarm join" to connect this node to swarm and try again.
 exit code: 1
 ```
 
-Overlay networking is a Swarm feature, so there is no way to try it outside one.
+Overlay networking is a Swarm feature, so it cannot be tried outside one.
 
 ### On a single-node swarm
 
@@ -457,13 +444,12 @@ $ docker network inspect my-overlay --format "..."
 driver=overlay scope=swarm attachable=true subnet=10.0.1.0/24
 ```
 
-Two things changed versus the bridge networks in Task 1: the driver is **overlay**, and
-the scope is **swarm** instead of **local** — the network definition is shared across
-every node in the cluster rather than existing only on this machine.
+Two things differ from the bridge networks in Task 1. The driver is `overlay`, and the
+scope is `swarm` instead of `local`, so the network definition is shared across every
+node in the cluster instead of existing only on this machine.
 
-An **ingress** network also appeared on its own. That is the one Swarm uses for its
-load balancer, so a request to a published port on *any* node reaches a container
-wherever it happens to be running.
+An `ingress` network also appeared on its own. Swarm uses it for its load balancer, so a
+request to a published port on any node reaches a container wherever it is running.
 
 `--attachable` lets plain `docker run` containers join. Without it only swarm services
 can.
@@ -486,10 +472,10 @@ $ docker exec ov1 ip addr show eth0
     inet 10.0.1.2/24 brd 10.0.1.255 scope global eth0
 ```
 
-Note the **MTU of 1450** rather than the usual 1500. Those missing 50 bytes are the
-VXLAN header that wraps every packet. That is the overlay's cost, and it is also the
-cause of a classic bug: an application that sets "do not fragment" and assumes 1500
-bytes will mysteriously hang on an overlay network.
+The MTU is 1450 instead of the usual 1500. The missing 50 bytes are the VXLAN header that
+wraps every packet. That is the overlay's cost, and it causes a known problem: an
+application that sets "do not fragment" and assumes 1500 bytes can hang on an overlay
+network.
 
 ### A swarm service on the overlay
 
@@ -518,14 +504,14 @@ $ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8108
 200
 ```
 
-`10.0.1.5` is worth pausing on: it is **not** either replica's address. It is a virtual
-IP for the *service*, and Swarm load-balances the two replicas behind it. So the name
-`web` resolves to one stable address no matter how many replicas there are or where they
-move to. That is the part Kubernetes calls a Service.
+`10.0.1.5` is not either replica's address. It is a virtual IP for the service, and Swarm
+load-balances the two replicas behind it. So the name `web` resolves to one stable address
+however many replicas there are and wherever they move to. Kubernetes calls this a
+Service.
 
-I only have one machine, so both replicas landed on the same host. The point is that the
-commands and the name-based connection would be **identical** if `web.2` were running on
-a different server, and that is the whole value of an overlay.
+I only have one machine, so both replicas landed on the same host. The commands and the
+name-based connection would be identical if `web.2` were running on a different server,
+which is the value of an overlay.
 
 ### Putting the machine back
 
@@ -542,11 +528,10 @@ Swarm: inactive
 
 ### How it works across multiple hosts
 
-Each host runs a VXLAN tunnel endpoint. When a container sends a packet to a container
-on another host, the local Docker daemon wraps that packet inside a UDP packet, sends it
-to the other host over the ordinary network, and the daemon there unwraps it and hands it
-to the target container. Neither container knows any of this happened; they just see a
-flat network.
+Each host runs a VXLAN tunnel endpoint. When a container sends a packet to a container on
+another host, the local Docker daemon wraps that packet inside a UDP packet and sends it
+to the other host over the ordinary network. The daemon there unwraps it and hands it to
+the target container. Neither container knows this happened, and both see a flat network.
 
 The swarm managers keep a shared store of which container is on which host and what its
 overlay IP is, so DNS by container or service name works across the whole cluster.
@@ -559,31 +544,27 @@ Ports that must be open between the hosts:
 | 7946/tcp+udp | node discovery and gossip |
 | 4789/udp | VXLAN data traffic |
 
-### When you would use one
+### When to use one
 
-When an application is spread across more than one machine and the parts must talk
-privately — an API on one server, a database on another — without publishing ports on
-the public network. Also when a service needs to move between nodes and stay reachable
-under the same name.
+An overlay fits an application spread across more than one machine whose parts must talk
+privately, for example an API on one server and a database on another, without publishing
+ports on the public network. It also fits a service that moves between nodes and has to
+stay reachable under the same name.
 
-For a single machine a bridge network is simpler and faster and does the same job, so
-overlay is not worth the complexity. In practice most teams that need this now use
-Kubernetes, where the same problem is solved by a CNI plugin — but the underlying idea,
-a virtual flat network stretched across hosts, is identical.
-
----
+On a single machine a bridge network is simpler and faster and does the same job, so
+overlay is not worth the complexity. Most teams that need this now use Kubernetes, where
+a CNI plugin solves the same problem with the same underlying idea: a virtual flat network
+stretched across hosts.
 
 ## Summary of the network drivers
 
-| Driver | Scope | Use it for |
+| Driver | Scope | Used for |
 |---|---|---|
 | `bridge` | one host | the default; isolated app networks on a single machine |
 | `host` | one host | no isolation, no NAT; agents that need the real network |
 | `overlay` | swarm | containers spread across several hosts, via VXLAN |
-| `none` | — | no networking at all; a job that must not touch the network |
-| `macvlan` | one host | give a container its own MAC and an IP on the physical LAN |
-
----
+| `none` | n/a | no networking at all; a job that must not touch the network |
+| `macvlan` | one host | gives a container its own MAC and an IP on the physical LAN |
 
 ## Cleanup
 

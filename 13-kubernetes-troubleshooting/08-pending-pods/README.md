@@ -11,8 +11,6 @@ node-that-does-not-exist`) and `fixed-pod.yaml` (same Pod without the selector),
 the lecture. A second Pending cause, impossible CPU and memory requests, is in
 [`scenarios/scenario-3-pending`](../scenarios/README.md#scenario-3-pending-impossible-resource-requests).
 
----
-
 ## 1. Identify
 
 ```bash
@@ -45,8 +43,8 @@ affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not help
 ```
 
 The scheduler checked my one node and rejected it because of the selector. It also says
-preemption (evicting lower-priority Pods) wouldn't help, because the mismatch is about
-labels, not capacity.
+preemption (evicting lower-priority Pods) wouldn't help, since the mismatch is about
+labels and has nothing to do with capacity.
 
 ## 3. Compare with the real node
 
@@ -58,7 +56,7 @@ kubectl get pod pending-demo -o jsonpath="{.spec.nodeSelector}{\"\n\"}"
 
 ![nodes](screenshots/03-check-nodes_24BCS10244.png)
 
-**Root cause:** the only node's `kubernetes.io/hostname` label is `minikube`, but the Pod
+Root cause: the only node's `kubernetes.io/hostname` label is `minikube`, but the Pod
 requires `node-that-does-not-exist`. No node can ever match, so the Pod would wait forever.
 
 ## 4. Fix and verify
@@ -78,7 +76,7 @@ kubectl get pod pending-demo -o wide
 
 `1/1 Running` on node `minikube` with IP `10.244.0.113`. Setting the selector to
 `kubernetes.io/hostname: minikube` would also have worked, but pinning a Pod to one node
-by hostname is rarely what you want.
+by hostname is rarely a good idea.
 
 ```bash
 kubectl delete -f fixed-pod.yaml
@@ -86,13 +84,11 @@ kubectl delete -f fixed-pod.yaml
 
 ![cleanup](screenshots/05-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
 - `Pending` with `NODE <none>` is a scheduling problem. The explanation is always in the
   `FailedScheduling` event from `default-scheduler`.
-- The message lists *why each node was rejected*: selector/affinity mismatch, untolerated
+- The message lists why each node was rejected: selector/affinity mismatch, untolerated
   taint, `Insufficient cpu/memory`, unbound PVC, and so on.
 - The fix depends on the cause: correct the selector, add a toleration, lower the requests,
   or add capacity. Deleting and recreating the Pod unchanged does nothing.

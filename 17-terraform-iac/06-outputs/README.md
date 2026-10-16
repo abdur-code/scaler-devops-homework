@@ -63,8 +63,8 @@ terraform output bucket_id
 ![output](screenshots/04-output_24BCS10244.png)
 
 `terraform output` reads the values from state without calling AWS. A single output is
-printed as a quoted string; `terraform output -raw bucket_id` would drop the quotes,
-which is the form to use in shell scripts. I used `-raw` in
+printed as a quoted string, and `terraform output -raw bucket_id` drops the quotes,
+which is the form that works in shell scripts. I used `-raw` in
 [01](../01-iac-basics/README.md#4-verify) to pass the bucket name to the AWS CLI.
 
 ## 4. Exercise: add a `bucket_name` output
@@ -84,7 +84,7 @@ terraform output bucket_name
 
 ![exercise](screenshots/05-exercise_24BCS10244.png)
 
-Adding an output doesn't touch AWS: the plan has no resource changes, only
+Adding an output does not touch AWS: the plan has no resource changes, only
 `Changes to Outputs: + bucket_name`, and Terraform explains it can save the new output
 value "without changing any real infrastructure". Result:
 `Resources: 0 added, 0 changed, 0 destroyed`, and `bucket_name` is now available.
@@ -106,17 +106,17 @@ terraform state list
 
 ## Why outputs matter
 
-- **Modules:** a child module's outputs are the only values its parent can use
+- Modules: a child module's outputs are the only values its parent can use
   (`module.network.vpc_id`).
-- **Humans:** IDs, IPs and URLs show up right after apply instead of in the console.
-- **Automation / CI/CD:** `terraform output -json` or `-raw` feeds values into scripts,
+- People: IDs, IPs and URLs show up right after apply instead of in the console.
+- Automation and CI/CD: `terraform output -json` or `-raw` feeds values into scripts,
   Ansible inventories or the next pipeline step.
-- **Sharing between stacks:** another configuration can read them through
+- Sharing between stacks: another configuration can read them through
   `terraform_remote_state`.
 
 ## What I understood
 
-- Outputs are part of state. That's why `terraform output` works offline, and why
+- Outputs are part of state. That is why `terraform output` works offline, and why
   `sensitive = true` outputs still sit in plain text in the state file.
 - Output values are computed. Anything that depends on AWS (ID, ARN) is unknown until
   apply, while constants are known at plan time.

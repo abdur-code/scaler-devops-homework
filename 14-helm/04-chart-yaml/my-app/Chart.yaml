@@ -1,5 +1,5 @@
-# Fix: the notes run "helm lint my-app/", but the lecture folder only had a bare
-# Chart.yaml. Moved it into my-app/ so the command has a chart directory to lint.
+# The notes run "helm lint my-app/", but the lecture folder only had a bare
+# Chart.yaml, so I moved it into my-app/ to give the command a chart directory.
 apiVersion: v2
 name: my-app
 description: A learning chart for the Chart.yaml topic

@@ -10,14 +10,14 @@ repository, deployed and kept in sync by an Argo CD Application.
 Git repo (desired state) ──▶ Argo CD (reconciles) ──▶ Kubernetes (actual state)
 ```
 
-The mini project needs **my own GitHub repository**, which I could not create from here.
+The mini project needs my own GitHub repository, which I could not create from here.
 So this README has three parts:
 
 1. everything that works locally, run in order (Steps 1, 2, 5 as written, 6, 8, 9);
-2. a **stand-in** for my repo: the same three manifests read (read-only) from the public
-   course repo, so Steps 5–9 run against something real;
-3. the exact commands for the parts that need GitHub (Steps 3, 4, 7), listed as pending
-   in the [session README](../README.md#pending-needs-the-student).
+2. a stand-in for my repo: the same three manifests read (read-only) from the public
+   course repo, so Steps 5 to 9 run against something real;
+3. the exact commands for the parts that need GitHub (Steps 3, 4, 7), which I did not do
+   and listed in the [session README](../README.md#not-done-the-08-steps-that-need-my-github-repo).
 
 ```text
 08-mini-project/
@@ -31,7 +31,7 @@ So this README has three parts:
 └── screenshots/
 ```
 
-## Step 1–2: Cluster and Argo CD, as written
+## Steps 1 and 2: cluster and Argo CD, as written
 
 ```bash
 kubectl get nodes
@@ -57,7 +57,7 @@ The CustomResourceDefinition "applicationsets.argoproj.io" is invalid:
 metadata.annotations: Too long: may not be more than 262144 bytes
 ```
 
-**Root cause.** Client-side `kubectl apply` stores a full copy of every object it applies
+The root cause is that client-side `kubectl apply` stores a full copy of every object it applies
 in the annotation `kubectl.kubernetes.io/last-applied-configuration`, so that the next
 `apply` can work out what was removed. Kubernetes limits all of an object's annotations
 together to 256 KiB (262144 bytes), and the ApplicationSet CRD is bigger than that on its
@@ -66,7 +66,7 @@ cluster the CRD would be missing, which leads to the
 `argocd-applicationset-controller` CrashLoopBackOff described in 07's troubleshooting
 section.
 
-**Fix.** Use server-side apply, which is exactly 07's install command. The API server
+The fix is server-side apply, which is exactly 07's install command. The API server
 tracks field ownership in `managedFields` and no annotation is written.
 
 ```bash
@@ -82,18 +82,18 @@ All three CRDs are `serverside-applied` and present, and all 7 Argo CD Pods are 
 `Running` (the client-side attempt only added annotations, so no Pod restarted). I
 filtered the output to the CRD lines. The full list of objects looks like 07's.
 
-## Step 3–4: Git repository and repoURL (pending)
+## Steps 3 and 4: Git repository and repoURL (not done)
 
-These steps need a new GitHub repository, so they are left for me to do by hand. The exact
-commands are in the [session README](../README.md#pending-needs-the-student). What I
+These steps need a new GitHub repository, so I did not do them. The exact commands are in
+the [session README](../README.md#not-done-the-08-steps-that-need-my-github-repo). What I
 prepared here:
 
 - `app/` holds only the three workload manifests, the files that go into the repo.
-- **Step 3 vs the lecture files:** Step 3 says *"Keep this teaching project's
-  `argocd-application.yaml` outside the Git `app/` path"*, but the lecture ships it inside
+- Step 3 vs the lecture files: Step 3 says "Keep this teaching project's
+  `argocd-application.yaml` outside the Git `app/` path", but the lecture ships it inside
   `app/`. 07 shows what goes wrong otherwise: the Application ends up managing itself. I
   moved it to `08-mini-project/argocd-application.yaml`.
-- **Step 4:** in that file `repoURL` is now `https://github.com/abdur-code/session20-gitops.git`
+- Step 4: in that file `repoURL` is now `https://github.com/abdur-code/session20-gitops.git`
   instead of the placeholder. I also added the `resources-finalizer.argocd.argoproj.io`
   finalizer, so the cleanup at the end of the notes really removes the app (the problem
   found in [07](../07-argocd/README.md#problem-found-deleting-the-application-does-not-delete-the-app)).
@@ -119,9 +119,9 @@ required: Repository not found`. GitHub returns "authentication required" for a 
 that doesn't exist. Nothing was deployed, and I deleted the Application. (This screenshot
 was taken before I moved the file out of `app/`, which is why the path is
 `app/argocd-application.yaml`.) My own repo URL would give the same error until the repo
-is created and pushed. That is the pending part.
+is created and pushed. That is the part I have not done.
 
-## Addition: a stand-in repository for Steps 5–9
+## Addition: a stand-in repository for Steps 5 to 9
 
 To run the rest of the project against a real Git repo, the stand-in Application reads the
 same `08-mini-project/app` folder from the public course repo
@@ -138,7 +138,7 @@ kubectl apply -f standin/argocd-application-standin.yaml
 
 ![stand-in apply](screenshots/04-standin-apply_24BCS10244.png)
 
-## Step 5–6: Application synced, Kubernetes resources created
+## Steps 5 and 6: Application synced, Kubernetes resources created
 
 ```bash
 kubectl get applications -n argocd
@@ -155,12 +155,12 @@ kubectl get all -n session20
 list matches: the deployment `2/2`, two `session20-mini-…` Pods, the Service and its
 ReplicaSet.
 
-## Step 7: Make a Git change (pending)
+## Step 7: Make a Git change (not done)
 
-Changing `replicas: 2` to `3` needs a commit and a push to my repo, so it is pending (see
+Changing `replicas: 2` to `3` needs a commit and a push to my repo, so I did not do it (see
 the session README). The Git side of this step (edit, `git diff`, commit) is shown in
 [06](../06-git-as-source-of-truth/README.md). The Argo CD side (cluster pulled to match a
-specific commit) is what Steps 5–6 just showed.
+specific commit) is what Steps 5 and 6 just showed.
 
 ## Step 8: Self-healing
 
@@ -214,47 +214,47 @@ kubectl get namespace session20
 
 ![cleanup](screenshots/08-cleanup_24BCS10244.png)
 
-Everything is gone, **including the namespace**. Here `namespace.yaml` is one of the files
+Everything is gone, including the namespace. Here `namespace.yaml` is one of the files
 in Git, so the Namespace is a resource the Application manages and the cascade deletes it
 too. In 07 the namespace only came from `CreateNamespace=true` and survived. Argo CD itself
 was removed in the session's [final cleanup](../README.md#final-cleanup).
 
 ## Final viva questions (in my own words)
 
-1. **Monitoring vs observability:** monitoring tells me *that* something is wrong, using
+1. Monitoring vs observability: monitoring tells me that something is wrong, using
    signals I chose in advance. Observability is having enough data (metrics, logs,
-   traces) to find out *why*, even for a failure nobody predicted.
-2. **Metrics vs logs vs traces:** numbers over time (how much, how often), event lines
+   traces) to find out why, even for a failure nobody predicted.
+2. Metrics vs logs vs traces: numbers over time (how much, how often), event lines
    (what happened), and one request's path through services (where the time went).
-3. **Prometheus:** a metrics database that scrapes `/metrics` from targets on a schedule,
+3. Prometheus: a metrics database that scrapes `/metrics` from targets on a schedule,
    stores time series and answers PromQL queries. It also evaluates alert rules.
-4. **Grafana:** a dashboard tool. It stores no metrics and sends queries to data sources
+4. Grafana: a dashboard tool. It stores no metrics and sends queries to data sources
    like Prometheus, then draws the results.
-5. **GitOps:** running deployments from Git. The repo holds the desired state and a
-   controller in the cluster keeps the cluster equal to it. Changes are commits, not
+5. GitOps: running deployments from Git. The repo holds the desired state and a
+   controller in the cluster keeps the cluster equal to it. Changes are commits instead of
    `kubectl` commands.
-6. **Git as source of truth:** if Git and the cluster disagree, Git wins. Git also gives
+6. Git as source of truth: if Git and the cluster disagree, Git wins. Git also gives
    history, review, diffs, authorship and rollback for every change.
-7. **Argo CD:** the GitOps controller. It watches a repo/path/revision, compares it with the
+7. Argo CD: the GitOps controller. It watches a repo/path/revision, compares it with the
    cluster, applies the difference, and reports sync and health status.
-8. **Desired state:** what the files in Git say should exist, e.g. `replicas: 2`.
-9. **Actual state:** what is really running in the cluster right now, e.g. 1 Pod after my
+8. Desired state: what the files in Git say should exist, e.g. `replicas: 2`.
+9. Actual state: what is really running in the cluster right now, e.g. 1 Pod after my
    manual scale.
-10. **Reconciliation:** the loop of comparing desired with actual and acting to remove the
+10. Reconciliation: the loop of comparing desired with actual and acting to remove the
     difference, run again and again.
-11. **Self-healing:** with `selfHeal: true`, Argo CD reverts manual changes to managed
+11. Self-healing: with `selfHeal: true`, Argo CD reverts manual changes to managed
     resources. My `--replicas=1` went back to 2 within a second.
-12. **Replicas 2 → 3 in Git:** after the commit is pushed, Argo CD sees the new revision on
+12. Replicas 2 → 3 in Git: after the commit is pushed, Argo CD sees the new revision on
     its next poll (≤ 3 min), marks the app `OutOfSync`, applies the Deployment with 3
     replicas, Kubernetes starts a third Pod, and the app returns to `Synced` / `Healthy`.
 
 ## What I understood
 
 - The whole project is four objects: three manifests in Git, plus one Application that is
-  applied by hand once and lives *outside* the path it watches.
+  applied by hand once and lives outside the path it watches.
 - A wrong or missing repo URL doesn't break anything. Argo CD just reports
   `Unknown`/`ComparisonError` and deploys nothing.
 - Self-heal makes `kubectl scale` pointless on a managed app. To change the replica count
-  I have to change Git, which is exactly the point of GitOps.
+  I have to change Git.
 - What gets deleted depends on what Git manages: the namespace went away here because it
   was a file in the repo, but not in 07, where Argo CD only created it.

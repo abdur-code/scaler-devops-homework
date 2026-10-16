@@ -12,9 +12,7 @@ Files:
 |---|---|---|
 | `broken-pod.yaml` | lecture | busybox prints two lines and runs `exit 1` |
 | `fixed-pod.yaml` | lecture | same Pod, prints "healthy" and `sleep 3600` |
-| `slow-crash-pod.yaml` | **my addition** | runs 20 s, then exits 1, so `--previous` has something to show |
-
----
+| `slow-crash-pod.yaml` | my addition | runs 20 s, then exits 1, so `--previous` has something to show |
 
 ## 1. Identify: create the broken Pod and watch it
 
@@ -41,15 +39,15 @@ kubectl describe pod crash-demo
 
 ![describe](screenshots/03-describe-pod_24BCS10244.png)
 
-What `describe` gives that `get` doesn't:
+What `describe` shows that `get` doesn't:
 
-- **State: Terminated, Reason: Error, Exit Code: 1** and **Last State** with the same
-  values: the process itself is exiting with code 1. It isn't being killed (that would be
+- State: Terminated, Reason: Error, Exit Code: 1, and Last State with the same
+  values. The process itself is exiting with code 1. It isn't being killed (that would be
   137 / OOMKilled) and the image isn't missing.
-- **Restart Count: 4**.
-- **Command:** shows the script, including `exit 1`.
-- **Events:** `Pulled/Created/Started (x5)` and `Warning BackOff ... Back-off restarting
-  failed container app`. Kubernetes did its part every time; the app keeps failing.
+- Restart Count: 4.
+- Command: shows the script, including `exit 1`.
+- Events: `Pulled/Created/Started (x5)` and `Warning BackOff ... Back-off restarting
+  failed container app`. Kubernetes did its part every time, and the app kept failing.
 
 ## 3. Investigate: logs
 
@@ -63,7 +61,7 @@ kubectl get pod crash-demo -o jsonpath="{.status.containerStatuses[0].lastState.
 
 `kubectl logs` prints `Application starting...` and `Something went wrong!`, the app's last
 words before exiting. The jsonpath query confirms the exit code is `1`.
-`kubectl logs --previous` did **not** work, though. See section 5.
+`kubectl logs --previous` did not work, though. See section 5.
 
 ## 4. Root cause and fix
 
@@ -74,12 +72,12 @@ diff broken-pod.yaml fixed-pod.yaml
 
 ![yaml](screenshots/05-root-cause-yaml_24BCS10244.png)
 
-**Root cause:** the container's command ends with `exit 1`, so the main process fails
+Root cause: the container's command ends with `exit 1`, so the main process fails
 every time it starts. Restarting can't help, because each restart runs the same script.
 (This stands in for a real app that exits on a bad config, a missing dependency or
 an exception.)
 
-**Fix:** the fixed command keeps the process running (`sleep 3600`) instead of exiting
+Fix: the fixed command keeps the process running (`sleep 3600`) instead of exiting
 with an error. A Pod's `command` can't be changed in place, so I deleted and recreated it.
 
 ```bash
@@ -91,7 +89,7 @@ kubectl get pod crash-demo
 
 ![fix](screenshots/07-fix_24BCS10244.png)
 
-**Verify** (25 s later):
+Verifying, 25 s later:
 
 ```bash
 kubectl get pod crash-demo
@@ -119,14 +117,14 @@ kubectl logs crash-demo --previous
 
 ![why previous fails](screenshots/06-why-previous-fails_24BCS10244.png)
 
-**Root cause.** The runtime only has **one** container left for this Pod (attempt 5,
+Root cause: the runtime only has one container left for this Pod (attempt 5,
 `3f776d...`, state `Exited`). The "previous" one (`106d4a...`) that `--previous` asks for
 has already been removed. The kubelet's garbage collector keeps only one dead container
-per Pod. With a container that dies instantly, the *current* container is already dead
+per Pod. With a container that dies instantly, the current container is already dead
 during the back-off wait, so it takes that one slot and the older one is deleted. Plain
 `kubectl logs crash-demo` (no `--previous`) is what shows the last crash here.
 
-**Fix / demonstration (addition).** `--previous` is useful when the current container
+Fix / demonstration (my addition): `--previous` is useful when the current container
 is running again after a crash. `slow-crash-pod.yaml` runs for 20 seconds and then exits 1:
 
 ```bash
@@ -142,8 +140,8 @@ kubectl logs slow-crash --previous
 
 Now `kubectl logs` shows only the new run (`17:16:58 run started...`), while
 `--previous` shows the crashed run, including the
-`17:16:58 FATAL: payment API timed out, exiting` line that explains the restart. That is
-the case `--previous` exists for.
+`17:16:58 FATAL: payment API timed out, exiting` line that explains the restart. This is
+the case `--previous` is meant for.
 
 ## 6. Cleanup
 
@@ -153,15 +151,13 @@ kubectl delete -f fixed-pod.yaml -f slow-crash-pod.yaml
 
 ![cleanup](screenshots/11-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
 - `CrashLoopBackOff` is a symptom: the kubelet is waiting before restarting a container
   that keeps exiting. The cause is in the exit code and the app's own logs.
-- In `describe`, Last State's reason and exit code split the cases: `Error` + 1 = the app
-  failed, `OOMKilled` + 137 = memory limit, `Completed` + 0 = it finished but the Pod
+- In `describe`, Last State's reason and exit code tell the cases apart: `Error` + 1 = the
+  app failed, `OOMKilled` + 137 = memory limit, `Completed` + 0 = it finished but the Pod
   restarts it anyway (I hit that in `scenarios/scenario-1-crashloop`).
 - `--previous` needs the previous container to still exist. For a container that dies
   instantly, plain `kubectl logs` already shows the last crash.
-- Deleting or restarting the Pod is not a fix. The command or config has to change.
+- Deleting or restarting the Pod doesn't fix it. The command or config has to change.

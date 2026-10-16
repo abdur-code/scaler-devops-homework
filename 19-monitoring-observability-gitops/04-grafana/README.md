@@ -51,9 +51,9 @@ curl -s -u admin:admin http://localhost:3000/api/datasources/uid/session20-prom/
 ![add data source](screenshots/02-add-datasource_24BCS10244.png)
 
 Grafana answered `"message": "Datasource added"`, and the health check (the API behind
-the **Save & test** button) returned `"Successfully queried the Prometheus API."` with
+the Save & test button) returned `"Successfully queried the Prometheus API."` with
 `"status": "OK"`, the text the notes expect. The URL is `http://prometheus:9090`, not
-`localhost:9090`. With `access: proxy` the Grafana *server* makes the request, and inside
+`localhost:9090`. With `access: proxy` the Grafana server makes the request, and inside
 the Grafana container `localhost` is Grafana itself. The Compose service name resolves to
 the Prometheus container.
 
@@ -73,12 +73,12 @@ Besides the lecture's `up` Stat panel, I added two time-series panels for the CP
 queries from 03. The last command asks Grafana to run `up` through the new data source, which
 is what a panel does when it renders. The answer is `1` for `prometheus:9090`.
 
-**Browser screenshot** of the dashboard after logging in as admin/admin (I skipped the
+Browser screenshot of the dashboard after logging in as admin/admin (I skipped the
 "change password" prompt):
 
 ![browser: Grafana dashboard](screenshots/browser-01-grafana-dashboard_24BCS10244.png)
 
-The Stat panel shows **1**, which means the Prometheus target is up, as the notes expect.
+The Stat panel shows 1, which means the Prometheus target is up, as the notes expect.
 The two graphs only start at the right edge because Prometheus had been running for about
 a minute. The time axis is in local time (IST).
 
@@ -92,11 +92,11 @@ docker compose ps -a
 ![compose down](screenshots/04-compose-down_24BCS10244.png)
 
 `docker compose down` also deletes the Grafana container's data, including the data source
-and dashboard I created. To keep them, you can mount a volume at `/var/lib/grafana`, or
-*provision* the data source and dashboards from files under `/etc/grafana/provisioning/`.
+and dashboard I created. To keep them, a volume can be mounted at `/var/lib/grafana`, or
+the data source and dashboards can be provisioned from files under `/etc/grafana/provisioning/`.
 Provisioning keeps dashboards in Git, which is GitOps applied to Grafana.
 
-`admin/admin` is Grafana's default login and is fine only for a local classroom demo. A
+`admin/admin` is Grafana's default login and is fine for a local demo. A
 real deployment sets `GF_SECURITY_ADMIN_PASSWORD` from a secret.
 
 ## What I understood

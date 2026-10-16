@@ -1,11 +1,11 @@
-# Mini Project (Task 3): Package and Deploy the Notes App with Helm
+# Mini project (Task 3): package and deploy the Notes app with Helm
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
 Homework Task 3. A Helm chart written from scratch for a "Notes" web app (nginx stands in
 for the app), with separate dev and prod values. I took it through lint, render, a dev
-install, an upgrade to prod values, a deliberately bad upgrade, rollback and cleanup.
+install, an upgrade to prod values, a bad upgrade, rollback and cleanup.
 
 ```text
 mini-project/
@@ -77,7 +77,7 @@ helm template notes-dev notes-chart -f notes-chart/values-prod.yaml | grep -E "r
 
 ![prod preview](screenshots/06-template-prod-preview_24BCS10244.png)
 
-`production`, `replicas: 3`, `nginx:1.25`.
+The preview shows `production`, `replicas: 3` and `nginx:1.25`.
 
 ## Step 10: install (development)
 
@@ -100,8 +100,8 @@ kubectl exec deploy/notes-dev-deploy -- nginx -v
 ![verify dev](screenshots/08-verify-dev_24BCS10244.png)
 
 One Pod, Service `80:30090/TCP`, ConfigMap with 2 keys. Inside the container:
-`ENVIRONMENT=development` and `nginx/1.24.0`. The checks with `exec` are my additions;
-they prove the values really reached the running container.
+`ENVIRONMENT=development` and `nginx/1.24.0`. The checks with `exec` are my additions,
+and they show the values reached the running container.
 
 NodePort 30090 isn't reachable from macOS with the docker driver, so I used a
 port-forward on my session's port 18154:
@@ -115,7 +115,7 @@ curl -s http://localhost:18154 | grep "<title>"
 ![port-forward](screenshots/09-port-forward-dev_24BCS10244.png)
 ![curl dev](screenshots/10-curl-dev_24BCS10244.png)
 
-`200 OK`, `Server: nginx/1.24.0`.
+The response was `200 OK` with `Server: nginx/1.24.0`.
 
 ## Step 11: upgrade to production values
 
@@ -130,8 +130,8 @@ kubectl exec deploy/notes-dev-deploy -- nginx -v
 ![upgrade to prod](screenshots/11-upgrade-prod_24BCS10244.png)
 ![verify prod](screenshots/12-verify-prod_24BCS10244.png)
 
-`REVISION: 2`. Three new Pods (the image changed, so every Pod was replaced), `nginx:1.25`
-(`nginx/1.25.5` inside), `ENVIRONMENT=production`.
+This gave `REVISION: 2` with three new Pods (the image changed, so every Pod was replaced),
+`nginx:1.25` (`nginx/1.25.5` inside) and `ENVIRONMENT=production`.
 
 ## Step 12: release history
 
@@ -142,8 +142,8 @@ helm get values notes-dev
 
 ![history](screenshots/13-history_24BCS10244.png)
 
-Revision 2 `deployed`. `helm get values` shows the whole prod file as the user-supplied
-values for this revision.
+Revision 2 is `deployed`, and `helm get values` shows the whole prod file as the
+user-supplied values for this revision.
 
 ## Problem found: step 13 quietly drops the production values
 
@@ -158,9 +158,9 @@ kubectl get deploy notes-dev-deploy -o wide
 ![bad upgrade as written](screenshots/14-bad-upgrade-as-written_24BCS10244.png)
 ![pods after bad upgrade](screenshots/15-pods-after-bad-upgrade_24BCS10244.png)
 
-The notes expect one `ImagePullBackOff` Pod among the prod Pods. What I got: the broken
-Pod (`ErrImagePull`) plus only **one** of the three prod Pods still running, and the
-Deployment now wants **1** replica, not 3.
+The notes expect one `ImagePullBackOff` Pod among the prod Pods. What I got was the broken
+Pod (`ErrImagePull`) plus only one of the three prod Pods still running, and the
+Deployment now wants 1 replica, not 3.
 
 ```bash
 helm get values notes-dev
@@ -170,17 +170,17 @@ kubectl get configmap notes-dev-config -o jsonpath='{.data}'; echo
 
 ![dev values came back](screenshots/16-dev-values-came-back_24BCS10244.png)
 
-**Root cause.** The only user-supplied value in revision 3 is the broken tag. When
+The cause is that the only user-supplied value in revision 3 is the broken tag. When
 `helm upgrade` gets any `--set` or `-f`, it starts again from the chart's `values.yaml`
-(the **dev** defaults) and applies only what was passed. The prod file from revision 2 is
-not carried over. So the "bad upgrade" changed three things, not one: the image broke,
-replicas went from 3 to 1, and `ENVIRONMENT` / the `environment` label went back to
+(the dev defaults) and applies only what was passed. The prod file from revision 2 is
+not carried over. So the "bad upgrade" changed three things: the image broke, replicas
+went from 3 to 1, and `ENVIRONMENT` and the `environment` label went back to
 `development`. In a real cluster that would take capacity away from prod and point it at
 dev config.
 
-**Fix.** Pass the prod file again on every prod upgrade (or use `--reuse-values`, which
-I avoid because it hides what the release is really running). First, step 14 as
-written:
+The fix is to pass the prod file again on every prod upgrade. (`--reuse-values` would
+also keep the old values, but I avoid it because it hides what the release is really
+running.) First, step 14 as written:
 
 ### Step 14: roll back to revision 2
 
@@ -195,9 +195,9 @@ helm history notes-dev
 ![rollback](screenshots/17-rollback_24BCS10244.png)
 ![verify rollback](screenshots/18-verify-rollback_24BCS10244.png)
 
-Back to 3/3 on `nginx:1.25`, label `environment=production`, ConfigMap
+This is back to 3/3 on `nginx:1.25`, label `environment=production`, ConfigMap
 `"ENVIRONMENT":"production"`. Revision 4 is `Rollback to 2`. The rollback restored the
-whole revision, ConfigMap included, not just the image.
+whole revision, ConfigMap included, and not just the image.
 
 ### Step 13 done correctly
 
@@ -211,7 +211,7 @@ kubectl get deploy notes-dev-deploy -o wide
 ![bad upgrade fixed](screenshots/19-bad-upgrade-fixed_24BCS10244.png)
 ![verify fixed bad upgrade](screenshots/20-verify-fixed-bad-upgrade_24BCS10244.png)
 
-Now only the image changes: `environment: production` and `replicaCount: 3` stay. The
+Now only the image changes and `environment: production` and `replicaCount: 3` stay. The
 result is what the notes describe: three prod Pods still `Running` and one new Pod in
 `ImagePullBackOff`. The rolling update can't continue, so users are still served by the
 old version.
@@ -261,11 +261,11 @@ later, once the Pods had finished terminating.
 ## What I understood
 
 - One chart plus two small values files replaces two full sets of YAML. The `diff` of
-  the values files is the entire difference between environments.
-- `helm upgrade` doesn't remember the values files of earlier upgrades. Every upgrade must
-  pass the full set of values for that environment, or the chart defaults come back.
-- `helm get values` is how I caught that: it shows exactly what each revision was given.
-- A rollback restores the whole revision: Deployment, ConfigMap and labels together. That
-  is the advantage over `kubectl rollout undo`, which only knows about the Deployment.
+  the values files is the whole difference between environments.
+- `helm upgrade` doesn't remember the values files of earlier upgrades. Every upgrade has
+  to pass the full set of values for that environment, or the chart defaults come back.
+- `helm get values` is how I caught that, since it shows what each revision was given.
+- A rollback restores the whole revision: Deployment, ConfigMap and labels together.
+  `kubectl rollout undo` only knows about the Deployment.
 - The Deployment's rolling update kept the old Pods serving during both bad upgrades, so
   the rollback fixed the release without any downtime.

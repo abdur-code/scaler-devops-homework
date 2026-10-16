@@ -1,13 +1,13 @@
-# 7. Kubernetes Deployment
+# 7. Kubernetes deployment
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Deploy the image to the local minikube cluster, in my own namespace `devsecops-lab`.
+I deployed the image to the local minikube cluster, in my own namespace `devsecops-lab`.
 
-**Names and ports.** The lecture has two versions of these manifests.
-`03-kubernetes-deployment/README.md` uses `devsecops-python`, port **5000** and NodePort
-30080. The files in `demo/k8s/` use `session17-python`, port **5001** and NodePort
+The lecture has two versions of these manifests.
+`03-kubernetes-deployment/README.md` uses `devsecops-python`, port 5000 and NodePort
+30080. The files in `demo/k8s/` use `session17-python`, port 5001 and NodePort
 30001. I deployed the `demo/k8s/` files, because that is the app I built and it listens
 on 5001. So every name below is `session17-python`, and the Service maps port 80 to 5001.
 
@@ -48,16 +48,16 @@ kubectl get events --field-selector reason=Failed -o custom-columns=POD:.involve
 Both Pods are `0/1`, alternating between `ErrImagePull` and `ImagePullBackOff`. The event
 says `docker.io/nensiravaliya28/hey-cicd:__IMAGE_TAG__: not found`.
 
-**Root cause**, three things together:
-1. `__IMAGE_TAG__` is a placeholder. Only the instructor's CI replaces it (with `sed`)
-   before applying, so applied by hand it's a literal tag that doesn't exist.
-2. `nensiravaliya28/hey-cicd` is the instructor's Docker Hub repository, not an image I
-   built, and my GitHub Actions run pushes to GHCR instead.
+The root cause is three things together:
+1. `__IMAGE_TAG__` is a template value. Only the instructor's CI replaces it (with `sed`)
+   before applying, so applied by hand it is a literal tag that does not exist.
+2. `nensiravaliya28/hey-cicd` is the instructor's Docker Hub repository and not an image
+   I built, and my GitHub Actions run pushes to GHCR instead.
 3. `imagePullPolicy: Always` makes the kubelet contact the registry on every Pod
    start, so even an image I loaded into minikube by hand would be ignored.
 
-**Fix** (in `k8s/deployment.yaml`, with a comment in the file): `image: hey-cicd:1.0` and
-`imagePullPolicy: IfNotPresent`. I also added the readiness/liveness probes from the
+The fix (in `k8s/deployment.yaml`, with a comment in the file) is `image: hey-cicd:1.0`
+and `imagePullPolicy: IfNotPresent`. I also added the readiness/liveness probes from the
 `03-kubernetes-deployment` notes (port changed from 5000 to 5001), a securityContext
 matching the non-root image (`runAsNonRoot`, read-only root filesystem, no privilege
 escalation, all capabilities dropped), and resource requests/limits.
@@ -99,9 +99,9 @@ Service is `NodePort 80:30001/TCP`.
 ## 7.4 Reach the app
 
 The notes use `kubectl port-forward ... 8080:5000` (and the demo README uses
-`minikube service`). With minikube's docker driver on macOS the node IP isn't routable
+`minikube service`). With minikube's docker driver on macOS the node IP is not routable
 from the Mac, and `minikube service` opens a tunnel on a random port, so I used
-port-forward on my own port **18171**.
+port-forward on my own port 18171.
 
 ```bash
 kubectl port-forward svc/session17-python 18171:80
@@ -131,8 +131,8 @@ requests. The dashboard also loads in a browser through the same port-forward:
 
 ## 7.5 Change the image tag with `kubectl set image`
 
-The lecture's practice questions: change the image tag, run `kubectl set image`, watch
-the rollout, verify the new Pods.
+This is from the lecture's practice questions: change the image tag with
+`kubectl set image`, watch the rollout, verify the new Pods.
 
 ```bash
 docker tag hey-cicd:1.0 hey-cicd:1.1 && minikube image load hey-cicd:1.1
@@ -143,8 +143,8 @@ kubectl rollout history deployment/session17-python
 
 ![set image](screenshots/10-set-image-rollout_24BCS10244.png)
 
-(My `get pods -o custom-columns=...` line in this screenshot failed because zsh tried to
-expand the unquoted `[0]` as a glob, so I re-ran it quoted below.)
+My `get pods -o custom-columns=...` line in this screenshot failed because zsh tried to
+expand the unquoted `[0]` as a glob, so I re-ran it quoted below.
 
 ```bash
 kubectl get pods -o custom-columns='NAME:.metadata.name,IMAGE:.spec.containers[0].image,READY:.status.containerStatuses[0].ready'
@@ -155,19 +155,19 @@ kubectl get replicasets -o wide
 ![verify new pods](screenshots/11-verify-new-pods_24BCS10244.png)
 
 Both Pods now run `hey-cicd:1.1`. Revision 3 records the new image, and the
-ReplicaSets show the whole story: revision 1 (`nensiravaliya28/hey-cicd:__IMAGE_TAG__`)
+ReplicaSets show the history: revision 1 (`nensiravaliya28/hey-cicd:__IMAGE_TAG__`)
 and revision 2 (`hey-cicd:1.0`) are scaled to 0 and kept for `rollout undo`.
 
 ## What I understood
 
-- `ImagePullBackOff` is about the *image reference*: wrong name, missing tag, private
+- `ImagePullBackOff` points at the image reference: wrong name, missing tag, private
   registry or no access. The event message names the exact reference that failed.
 - `imagePullPolicy` decides whether a locally loaded image is used. `Always` forces a
   registry pull, while `IfNotPresent` uses the node's copy. With real registries and
   immutable tags (like a commit SHA), `IfNotPresent` is safe.
-- Readiness probes are what make `rollout status` meaningful: a Pod only counts as
-  available once `/health` answers, so a broken image would stall the rollout instead
-  of replacing healthy Pods.
-- Changing the image and then waiting on `rollout status` is the whole CD step. The
-  workflow in section 9 does the same with the commit SHA as the tag, so every
-  deployed Pod can be traced back to one commit.
+- Readiness probes make `rollout status` meaningful. A Pod only counts as available once
+  `/health` answers, so a broken image stalls the rollout instead of replacing healthy
+  Pods.
+- Changing the image and then waiting on `rollout status` is the CD step. The workflow in
+  section 9 does the same with the commit SHA as the tag, so every deployed Pod can be
+  traced back to one commit.

@@ -1,4 +1,4 @@
-# Helm: Kubernetes Package Manager
+# Helm: Kubernetes package manager
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -6,13 +6,13 @@
 Class session 15. Lecture material: [`session-15-helm`](https://github.com/Nency-Ravaliya/devops-heros/tree/main/session-15-helm)
 in the course repo. I worked through every lecture topic in order: Helm basics and
 repos, chart structure, `Chart.yaml`, `values.yaml`, templates, install/upgrade and
-rollback, a full app deployment and the mini project. I added the commands the homework
-asks for that the notes skip (`helm status`, `helm get`, `helm repo list/update/remove`,
-`helm search repo/hub`) and a separate rollback workflow for Task 2. Every command was
-typed in a real terminal on my Mac against a single-node minikube cluster, and every
-screenshot is that terminal.
+rollback, a full app deployment and the mini project. I also added the commands the
+homework asks for that the notes skip (`helm status`, `helm get`,
+`helm repo list/update/remove`, `helm search repo/hub`) and a separate rollback workflow
+for Task 2. Every command was typed in a real terminal on my Mac against a single-node
+minikube cluster, and every screenshot is from that terminal.
 
-## Homework tasks → where they are
+## Homework tasks and where they are
 
 | Task | What was asked | Where |
 |---|---|---|
@@ -20,10 +20,9 @@ screenshot is that terminal.
 | 2 | Rollback workflow: Install → Upgrade → Verify → Upgrade again → Verify → Rollback → Verify | [`task-2-rollback-workflow/`](task-2-rollback-workflow/) |
 | 3 | Helm mini project (Notes app chart, dev/prod values, bad upgrade, rollback) | [`mini-project/`](mini-project/) |
 
-Deliverables: the Helm charts, `values.yaml` files and templates are in the folders below
-(`demo-chart`, `simple-chart`, `my-app`, `template-demo`, `app-chart`, `guestbook-chart`,
-`notes-chart`). Each folder's README has the installation, upgrade and rollback steps with
-screenshots.
+The Helm charts, `values.yaml` files and templates are in the folders below (`demo-chart`,
+`simple-chart`, `my-app`, `template-demo`, `app-chart`, `guestbook-chart`, `notes-chart`).
+Each folder's README has the installation, upgrade and rollback steps with screenshots.
 
 ### Task 1: every Helm command and where it is shown
 
@@ -68,24 +67,24 @@ Each folder has a `screenshots/` directory, and its README walks through them in
 ## Environment
 
 - macOS (Apple Silicon), Docker Desktop, minikube v1.39 on the docker driver, Kubernetes
-  v1.37, one node. Helm **v3.22.0**, installed with Homebrew (`helm@3`).
-- **Namespace.** Everything ran in namespace `helm-lab`, created on screen at the start
+  v1.37, one node. Helm v3.22.0, installed with Homebrew (`helm@3`).
+- Namespace: everything ran in `helm-lab`, created on screen at the start
   ([01](01-what-is-helm/README.md)) and deleted on screen at the end
-  ([Task 2](task-2-rollback-workflow/README.md#cleanup-end-of-the-whole-session)). It was
-  set as the default namespace of my terminal's kubeconfig so other sessions could use the
+  ([Task 2](task-2-rollback-workflow/README.md#cleanup-end-of-the-whole-session)). I set
+  it as the default namespace of my terminal's kubeconfig so other sessions could use the
   same cluster at the same time. Helm takes the namespace from the kubeconfig too, so every
   release shows `NAMESPACE helm-lab` even though no command passes `-n`.
-- **Helm install.** The notes install Helm with `curl … get-helm-3 | bash`. I didn't run
-  it, because Helm was already installed through Homebrew and a second, unmanaged copy in
-  `/usr/local/bin` would only cause version confusion. `helm version` is shown instead
+- Helm install: the notes install Helm with `curl … get-helm-3 | bash`. I didn't run it,
+  because Helm was already installed through Homebrew and a second, unmanaged copy in
+  `/usr/local/bin` would only cause version confusion. I showed `helm version` instead
   ([01](01-what-is-helm/README.md#1-install-helm)).
-- **Ports.** NodePorts and LoadBalancer IPs aren't reachable from macOS with the docker
-  driver ([shown in 09](09-deploying-application/README.md#5-reach-the-app)), so apps were
-  checked with `kubectl port-forward` on my session's ports: 18150 (bitnami nginx), 18151
+- Ports: NodePorts and LoadBalancer IPs aren't reachable from macOS with the docker
+  driver ([shown in 09](09-deploying-application/README.md#5-reach-the-app)), so I checked
+  apps with `kubectl port-forward` on my session's ports: 18150 (bitnami nginx), 18151
   (demo-chart; the NOTES.txt says 8080), 18153 (guestbook), 18154 (notes-dev), 18155
   (Task 2).
-- **Bitnami.** I ran `bitnami/nginx` as written, expecting it might fail after Bitnami's
-  2025 catalogue changes. It installed and served fine (chart 25.2.1, image
+- Bitnami: I ran `bitnami/nginx` as written, expecting it might fail after Bitnami's 2025
+  catalogue changes. It installed and served fine (chart 25.2.1, image
   `bitnami/nginx:latest`), so no substitute chart was needed.
 
 ## Problems found in the lecture material
@@ -102,22 +101,16 @@ Each folder has a `screenshots/` directory, and its README walks through them in
 | 09 README vs file | README shows `image.tag: "1.24"`, `values.yaml` has `"latest"` | kept the file; noted that pinning is better ([details](09-deploying-application/README.md#note-the-values-files-image-tag-differs-from-the-readme)) |
 | mini project step 13 | upgrade with `--set` only drops `values-prod.yaml`: replicas 3 → 1 and environment back to `development` | ran it as written, then the corrected `-f values-prod.yaml --set …` ([details](mini-project/README.md#problem-found-step-13-quietly-drops-the-production-values)) |
 
-## Pending: needs the student
-
-Nothing remote is required for this session: no registry, GitHub or cloud steps. The
-folder only needs to be committed and pushed with the rest of the repo.
-
 ## What I understood
 
-- Helm turns a set of Kubernetes YAML files into one versioned unit: a chart, installed
-  as a named release. Install, upgrade, rollback and uninstall each act on all of the
+- Helm turns a set of Kubernetes YAML files into one versioned unit, a chart, installed as
+  a named release. Install, upgrade, rollback and uninstall each act on all of the
   release's objects at once.
 - Values are layered (chart defaults, then `-f` files, then `--set`), and an upgrade
   starts from the chart defaults again unless I pass my values again. Most of the
-  surprises in this session came from that one rule.
+  surprises in this session came from that rule.
 - Every change is a numbered revision stored as a Secret in the namespace. That stored
-  history is what makes `helm history`, `helm get` and `helm rollback` work, and a
-  rollback is itself a new revision.
-- Things that are cluster-wide (NodePorts) or unpinned (`latest` tags) break the promise
-  that a chart behaves the same every time it's installed, so they belong in values and
-  should be pinned.
+  history is what `helm history`, `helm get` and `helm rollback` read, and a rollback is
+  itself a new revision.
+- Cluster-wide things (NodePorts) and unpinned `latest` tags mean a chart doesn't behave
+  the same every time it's installed, so they belong in values and should be pinned.

@@ -5,9 +5,9 @@
 
 ## The idea
 
-- A **Region** is a geographic area where AWS runs data centers, e.g. `ap-south-1`
+- A Region is a geographic area where AWS runs data centers, e.g. `ap-south-1`
   (Mumbai), `us-east-1`, `eu-west-1`.
-- An **Availability Zone (AZ)** is an isolated location *inside* a region (separate
+- An Availability Zone (AZ) is an isolated location inside a region (separate
   buildings, power and networking). A region has several AZs.
 
 ```text
@@ -41,8 +41,8 @@ aws ec2 describe-availability-zones \
 - `get-caller-identity` shows who I am authenticated as: IAM user `homework-terraform` in
   account `187004426521`. It doesn't print any keys.
 - I added the AZ listing to see the "one region, several AZs" picture with real data:
-  `ap-south-1` has three AZs, `1a`, `1b` and `1c`. The zone **ID** (`aps1-az1`…) is the
-  physical location; AWS maps zone *names* to IDs differently per account, which is why
+  `ap-south-1` has three AZs, `1a`, `1b` and `1c`. The zone ID (`aps1-az1`…) is the
+  physical location, and AWS maps zone names to IDs differently per account, which is why
   `1b` here is `aps1-az3`.
 
 ## Practice answers
@@ -56,8 +56,8 @@ Is a subnet tied to a Region or an AZ?    One specific AZ.
 
 ## What I understood
 
-- I pick the region once in the Terraform provider; every resource is then created there
-  unless I say otherwise.
+- I pick the region once in the Terraform provider, and every resource is then created
+  there unless I say otherwise.
 - VPCs are regional but subnets are zonal, so a highly available design needs at least
   one subnet per AZ. The labs here use a single subnet in `ap-south-1a`, which is fine for
   learning but would not survive an AZ outage.

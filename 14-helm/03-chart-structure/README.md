@@ -1,4 +1,4 @@
-# Chart Structure: a chart written by hand
+# Chart structure: a chart written by hand
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -38,7 +38,8 @@ cat simple-chart/templates/service.yaml
 ![chart files](screenshots/02-chart-files_24BCS10244.png)
 ![templates](screenshots/03-templates_24BCS10244.png)
 
-- `version: 0.1.0` is the chart's own version; `appVersion: "1.0"` is the app inside it.
+- `version: 0.1.0` is the chart's own version and `appVersion: "1.0"` is the version of the
+  app inside it.
 - The templates use `{{ .Release.Name }}` for names and labels, and `{{ .Values.* }}`
   for replicas, image and port.
 
@@ -66,9 +67,9 @@ kubectl get endpointslices -l kubernetes.io/service-name=my-release-svc
 ![install](screenshots/05-helm-install_24BCS10244.png)
 ![pods and services](screenshots/06-get-pods-services_24BCS10244.png)
 
-One `my-release-app-…` Pod running and a ClusterIP Service `my-release-svc`. I added the
-EndpointSlice check: it lists the Pod's IP on port 80, which proves the selector written
-in the template really matches the Pod labels.
+There is one `my-release-app-…` Pod running and a ClusterIP Service `my-release-svc`. I
+added the EndpointSlice check myself. It lists the Pod's IP on port 80, which shows the
+selector in the template matches the Pod labels.
 
 ## 4. Clean up
 
@@ -81,9 +82,9 @@ kubectl get all
 
 ## What I understood
 
-- Only `Chart.yaml` and a `templates/` folder are really required. `values.yaml` holds
-  defaults, and `_helpers.tpl` and `NOTES.txt` are optional extras.
+- Only `Chart.yaml` and a `templates/` folder are required. `values.yaml` holds defaults,
+  and `_helpers.tpl` and `NOTES.txt` are optional extras.
 - `{{ .Release.Name }}` keeps two installs of the same chart from colliding, because
   every object name and label includes the release name.
 - Deployment labels and Service selectors are both templated from the same value, so they
-  can't drift apart the way two hand-written YAML files can.
+  can't drift apart like two hand-written YAML files can.

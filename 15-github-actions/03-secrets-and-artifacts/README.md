@@ -1,4 +1,4 @@
-# Secrets and Artifacts
+# Secrets and artifacts
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -31,8 +31,6 @@ Session 16, lecture parts `07-secrets` and `08-artifacts`. Both workflows only h
 `--secret-file` or plain `-s NAME` instead of `-s NAME=value`, so the value doesn't end up
 in my shell history.
 
----
-
 ## 1. Secret not configured: the workflow fails
 
 ```bash
@@ -43,10 +41,10 @@ echo "act exit code: $?"
 
 ![secret missing](screenshots/01-secret-missing_24BCS10244.png)
 
-`Secret is not configured.`, then `exit 1` fails the step and the job, and act exits with
-code 1, the same as the red run the notes describe. A missing secret doesn't cause an error
-by itself; `${{ secrets.DEMO_SECRET }}` just becomes empty, which is why the workflow checks
-it with `[ -n "$DEMO_SECRET" ]`.
+The output is `Secret is not configured.`, then `exit 1` fails the step and the job, and
+act exits with code 1, the same as the red run the notes describe. A missing secret doesn't
+cause an error by itself, since `${{ secrets.DEMO_SECRET }}` just becomes empty. That is
+why the workflow checks it with `[ -n "$DEMO_SECRET" ]`.
 
 ## 2. Secret provided
 
@@ -57,8 +55,9 @@ echo "act exit code: $?"
 
 ![secret provided](screenshots/02-secret-provided_24BCS10244.png)
 
-`Secret is available.` and exit code 0. The value itself is never printed. The workflow
-only tests whether it is non-empty, which is the "do not print secrets" rule from the notes.
+This prints `Secret is available.` and exits with code 0. The value itself is never
+printed. The workflow only tests whether it is non-empty, which follows the "do not print
+secrets" rule from the notes.
 
 ## 3. Build locally
 
@@ -88,8 +87,8 @@ act workflow_dispatch -W .github/workflows/artifact-demo.yml -P ubuntu-latest=ca
 
 ![artifact upload](screenshots/04-artifact-upload_24BCS10244.png)
 
-act started its artifact server on `:18160`. The workflow's own `build.sh` ran **inside the
-runner** (the `build/` listing shows `root root`), and `upload-artifact@v4` uploaded 3 files
+act started its artifact server on `:18160`. The workflow's own `build.sh` ran inside the
+runner (the `build/` listing shows `root root`), and `upload-artifact@v4` uploaded 3 files
 as `session16-build`.
 
 The "Artifact download URL" it prints is not real. act builds it from my homework repo's
@@ -112,21 +111,20 @@ unzip -p ../.act-artifacts/1/session16-build/session16-build.zip version.txt bui
 
 The zip has the same three files (times in UTC, the runner's clock). They come from the
 runner's own build: `build.sh` starts with `rm -rf build`, so nothing from my local `build/`
-could get into the artifact. The `1/` in the path is the run number; act always uses run 1, so a
-later run overwrites the earlier artifact. The `.act-artifacts/` folder is git-ignored and I
-deleted it after taking the screenshots.
-
----
+could get into the artifact. The `1/` in the path is the run number. act always uses run 1,
+so a later run overwrites the earlier artifact. The `.act-artifacts/` folder is git-ignored
+and I deleted it after taking the screenshots.
 
 ## What I understood
 
-- **Secrets are injected at run time, never stored in the YAML.** The workflow only names
-  the secret (`secrets.DEMO_SECRET`); the value lives in the repository settings. A missing
-  secret is silently empty, so a pipeline that depends on it should check and fail early.
-- **Don't print secrets, even though GitHub masks them.** Testing `-n "$VAR"` proves the
-  secret is there without leaking it into logs that many people can read.
-- **Artifacts are how output survives the runner.** The runner is deleted after the job,
-  so `build/` would be lost. `upload-artifact` stores it with the run, where people (or
-  later jobs, see `final-cicd-project`) can download it.
-- **Git stores source, artifacts store build output.** `build/` is git-ignored in the
+- Secrets are injected at run time and never stored in the YAML. The workflow only names
+  the secret (`secrets.DEMO_SECRET`) and the value lives in the repository settings. A
+  missing secret is silently empty, so a pipeline that depends on it should check and fail
+  early.
+- Secrets shouldn't be printed, even though GitHub masks them. Testing `-n "$VAR"` shows
+  the secret is there without leaking it into logs that many people can read.
+- Artifacts are how output survives the runner. The runner is deleted after the job, so
+  `build/` would be lost. `upload-artifact` stores it with the run, where people (or later
+  jobs, see `final-cicd-project`) can download it.
+- Git stores source and artifacts store build output. `build/` is git-ignored in the
   projects but uploaded as an artifact.

@@ -1,4 +1,4 @@
-# Apply this file from your local/admin environment; do not put it under the Git source path.
+# I apply this file from my local/admin environment. It is not kept under the Git source path.
 # Changed from the lecture copy:
 #  - moved out of app/ (Step 3 says the Application must stay outside the path it watches)
 #  - repoURL set to my own repository instead of the YOUR_USERNAME/YOUR_GITOPS_REPO placeholder

@@ -1,4 +1,4 @@
-# Demo Project: session16-cicd-github-actions
+# Demo project: session16-cicd-github-actions
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -6,13 +6,14 @@
 Session 16, lecture folder `demo/`. This is the instructor's step-by-step walkthrough:
 create the project from nothing, write the calculator and its tests, run them, add a build
 script and `.gitignore`, `git init` + commit, run the "Python CI Pipeline", and finish with
-the **student hands-on task** (add a `power()` operation). I followed it end to end.
+the hands-on task (add a `power()` operation). I followed it end to end.
 
-**Where it ran.** The walkthrough creates its own git repository, and my homework folder is
-already inside a git repo that I must not commit to. So I built the project in a separate
+The walkthrough creates its own git repository, and my homework folder is already inside a
+git repo that I did not want to commit this into. So I built the project in a separate
 scratch folder outside the homework repo (prompt `session16-cicd-github-actions`), with a
-repo-local git identity and **no remote**. This folder is a copy of its final state, without
-`.git/` and `build/`. Pushing to GitHub is left for later (see the root README, "Pending").
+repo-local git identity and no remote. This folder is a copy of its final state, without
+`.git/` and `build/`. I have not pushed it to GitHub (see "Not done: pushing to GitHub" in
+the root README).
 
 ## Folder structure
 
@@ -29,8 +30,6 @@ repo-local git identity and **no remote**. This folder is a copy of its final st
 ├── screenshots/
 └── README.md
 ```
-
----
 
 ## 1. Create the project skeleton
 
@@ -70,9 +69,9 @@ wc -l README.md app/*.py tests/*.py requirements.txt build.sh .gitignore .github
 
 ![write files](screenshots/02-write-files_24BCS10244.png)
 
-Note: the code printed in the demo README (section 4) splits the input on spaces, but the
-`calculator.py` file in the `demo/` folder uses a regex, so it also accepts `3+5`. I used the
-file. Its `ci.yml` is the two-job "final recommended" version from section 43.
+The code printed in the demo README (section 4) splits the input on spaces, but the
+`calculator.py` file in the `demo/` folder uses a regex, so it also accepts `3+5`. I used
+the file. Its `ci.yml` is the two-job "final recommended" version from section 43.
 
 ## 3. Run the application
 
@@ -127,7 +126,7 @@ git status
 ![git init](screenshots/06-git-init_24BCS10244.png)
 
 The identity is set only for this repo (no `--global`). `build/` exists on disk but is
-**not** listed as untracked, because `.gitignore` excludes it. Build output stays out of
+not listed as untracked, because `.gitignore` excludes it, so build output stays out of
 git.
 
 ## 7. First commit
@@ -143,9 +142,9 @@ git remote -v
 
 ![git commit](screenshots/07-git-commit_24BCS10244.png)
 
-8 files committed, matching section 24–25. `git remote -v` is empty on purpose: the notes'
-`git remote add origin … && git push -u origin main` is the part that needs my GitHub
-account, so it is listed under "Pending" in the root README.
+8 files committed, matching sections 24-25. `git remote -v` is empty because the notes'
+`git remote add origin … && git push -u origin main` needs my GitHub account. I listed that
+under "Not done: pushing to GitHub" in the root README.
 
 ## 8. What the pipeline looks like
 
@@ -156,7 +155,7 @@ act -g
 
 ![act list graph](screenshots/08-act-list-graph_24BCS10244.png)
 
-`test` is stage 0 and `build` is stage 1: `needs: test` (sections 41–42) makes the build wait
+`test` is stage 0 and `build` is stage 1: `needs: test` (sections 41-42) makes the build wait
 for the tests. Without `needs`, both would be stage 0 and run in parallel (shown in
 `02-workflows-jobs-runners`, step 4).
 
@@ -175,9 +174,9 @@ echo "act exit code: ${pipestatus[1]}"
 `[PASS] Test Application`, then `[PASS] Build Application` with `calculator-build`
 uploaded, which is the "Expected Successful Pipeline" from the notes.
 
-## 10. Student hands-on task: add `power()`
+## 10. Hands-on task: add `power()`
 
-Tasks 1–3 of section 46: add the function, add the test, run pytest.
+Tasks 1-3 of section 46: add the function, add the test, run pytest.
 
 ```bash
 perl -0pi -e 's/(    return a \/ b\n)/$1\n\ndef power(a, b):\n    return a ** b\n/' app/calculator.py
@@ -189,12 +188,12 @@ pytest -v
 
 ![power task](screenshots/10-task-power-function_24BCS10244.png)
 
-The diff shows exactly the two additions from the task. I placed `power()` next to the
-other operations, above the `if __name__ == "__main__":` block, and also had to add `power`
-to the test file's import line (the task doesn't mention that, but the test can't run
-without it). `6 passed`, the expected result.
+The diff shows the two additions from the task. I placed `power()` next to the other
+operations, above the `if __name__ == "__main__":` block, and also had to add `power` to
+the test file's import line (the task doesn't mention that, but the test can't run without
+it). The result is `6 passed`, as expected.
 
-## 11. Commit and run the pipeline again (task 4–5)
+## 11. Commit and run the pipeline again (task 4-5)
 
 ```bash
 git add .
@@ -209,7 +208,8 @@ echo "act exit code: ${pipestatus[1]}"
 
 ![commit and run](screenshots/11-commit-and-run_24BCS10244.png)
 
-Two commits now. In the runner `test_power PASSED`, `6 passed`, and both jobs succeeded.
+There are two commits now. In the runner `test_power PASSED`, `6 passed`, and both jobs
+succeeded.
 
 ## 12. Inspect the artifact (task 6)
 
@@ -226,17 +226,14 @@ The artifact's `calculator.py` contains `def power`, so it was built from the ne
 `Build Date` is in UTC because it was written inside the runner container, while my local
 `build/` (step 5) shows IST.
 
----
-
 ## What I understood
 
-- **The CI loop is: change → test locally → commit → pipeline → artifact.** The hands-on
-  task went through all of it, and the artifact proves which code version was built.
-- **`.gitignore` decides what reaches the runner.** `build/` and caches never get
-  committed, so the pipeline always builds from source instead of reusing something from
-  my laptop.
-- **`needs:` turns parallel jobs into a pipeline.** With `build` depending on `test`, a
+- The CI loop is change, test locally, commit, pipeline, artifact. The hands-on task went
+  through all of it, and the artifact shows which code version was built.
+- `.gitignore` decides what reaches the runner. `build/` and caches never get committed,
+  so the pipeline always builds from source instead of reusing something from my laptop.
+- `needs:` turns parallel jobs into a pipeline. With `build` depending on `test`, a
   failing test means no build and no artifact.
-- **Tests need maintenance with the code.** Adding `power()` was one line, but the test
+- Tests need maintenance along with the code. Adding `power()` was one line, but the test
   file's import also had to change, which is easy to miss and is the kind of mistake CI
   catches.

@@ -3,16 +3,16 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Session 18, Task 2 (AWS services research). Written in my own words. The CLI examples
-at the end are read-only calls against my homework AWS account; nothing was created.
+Session 18, Task 2 (AWS services research). The CLI examples at the end are read-only
+calls against my homework AWS account, and nothing was created.
 
 ## What IAM is
 
-IAM is the AWS service that answers two questions for every single API call:
+IAM is the AWS service that answers two questions for every API call:
 
-1. **Authentication:** *who* is making this request? (a user with an access key, a role
-   with temporary credentials, the root user, ...)
-2. **Authorization:** is that identity *allowed* to do this action on this resource?
+1. Authentication: who is making this request? (a user with an access key, a role with
+   temporary credentials, the root user, ...)
+2. Authorization: is that identity allowed to do this action on this resource?
 
 Every click in the console and every `aws ...` or Terraform call is an API request, and
 IAM checks it before anything happens. IAM is global (not tied to a region) and has no
@@ -35,7 +35,7 @@ request: "s3:CreateBucket on arn:aws:s3:::my-bucket"
    ALLOWED
 ```
 
-The default answer is **deny**. Nothing is allowed until a policy allows it, and an
+The default answer is deny. Nothing is allowed until a policy allows it, and an
 explicit `Deny` always wins over any `Allow`.
 
 ## The building blocks
@@ -69,16 +69,16 @@ Group "admins"      ──>  policy: AdministratorAccess
    └── carol
 ```
 
-Groups can't be nested, and a group is not an identity: you can't log in as a group or
-name it as a principal in a policy.
+Groups cannot be nested, and a group is not an identity, so nobody can log in as a group
+or name it as a principal in a policy.
 
 ### Roles
 
-A role is an identity with permissions but **no long-term credentials**. Something
-*assumes* the role and receives temporary credentials (from AWS STS) that expire after a
-set time, usually 1 hour.
+A role is an identity with permissions but no long-term credentials. Something assumes
+the role and receives temporary credentials (from AWS STS) that expire after a set time,
+usually 1 hour.
 
-Who can assume it is defined by the role's **trust policy**. Typical cases:
+Who can assume it is defined by the role's trust policy. Typical cases:
 
 - an EC2 instance (through an instance profile) that needs to read from S3
 - a Lambda function or an EKS pod (IRSA / Pod Identity)
@@ -121,19 +121,19 @@ Kinds of policies:
 | Inline | one user/group/role | embedded in that identity, deleted with it |
 | Resource-based | a resource (S3 bucket, SQS queue, KMS key) | has a `Principal` field; can grant cross-account access |
 | Trust policy | a role | resource-based policy that says who may assume the role |
-| Permissions boundary | a user or role | the *maximum* permissions it can ever get |
+| Permissions boundary | a user or role | the maximum permissions it can ever get |
 | SCP (Organizations) | an account or OU | guardrails for whole accounts |
 
 ### Permissions
 
-The *effective* permission is the result of evaluating all of the above together:
+The effective permission is the result of evaluating all of the above together:
 
 - start from deny
 - an explicit `Deny` in any policy ends it
 - otherwise there must be an `Allow` in an identity or resource policy
 - and the action must also be inside any boundary or SCP that applies
 
-So attaching an `Allow` is necessary but not always sufficient.
+So attaching an `Allow` is necessary but not always enough.
 
 ## Least privilege
 
@@ -146,7 +146,7 @@ more. In practice:
 - use IAM Access Analyzer to generate a policy from what a role actually used
 - review and remove permissions that are never used (last-accessed info)
 
-My own setup is a good counter-example: `homework-terraform` has `AdministratorAccess`
+My own setup is not least privilege: `homework-terraform` has `AdministratorAccess`
 because Terraform in this course creates many different kinds of resources. For a real
 team I would give a Terraform CI role only the services it manages, and limit it to one
 region and to resources carrying our tags.
@@ -191,25 +191,24 @@ aws iam list-attached-user-policies --user-name homework-terraform
   `arn:aws:iam::187004426521:user/homework-terraform`. I used `--query` to show only
   these four fields and leave out the user's tags.
 - `list-groups-for-user` is empty: the user is in no group, so its permissions come
-  only from directly attached policies. That's fine for a one-person homework account,
+  only from directly attached policies. That is fine for a one-person homework account,
   but in a team I would put the policy on a group instead.
 - `list-attached-user-policies` shows the AWS managed policy `AdministratorAccess`
-  (`"Action": "*"`, `"Resource": "*"`). It is the opposite of least privilege, which
+  (`"Action": "*"`, `"Resource": "*"`). That is the opposite of least privilege, which
   is why the account has a zero-spend budget alert and every resource I create is
   tagged and destroyed straight away.
 
 All three calls only read. I did not create, change or delete any user, group, role,
 policy or access key.
 
-
 ## What I understood
 
 - IAM decides two things for every API call: who is calling, and whether that identity
   is allowed to do this action on this resource. The default is deny, and an explicit
   Deny always wins.
-- Users and groups are long-lived identities; roles are identities that hand out
-  temporary credentials, which is why roles are the safer choice for machines and CI.
+- Users and groups are long-lived identities, and roles hand out temporary credentials,
+  which is why roles are the safer choice for machines and CI.
 - Policies are JSON documents of Effect / Action / Resource / Condition, and the final
-  permission is the combination of every policy that applies, not one policy alone.
-- Least privilege is a habit, not a single setting. My homework user is an admin for
-  convenience, and I can explain why a real pipeline should not be.
+  permission is the combination of every policy that applies.
+- Least privilege has to be kept up over time and is more than one setting. My homework
+  user is an admin for convenience, and a real pipeline should not be.

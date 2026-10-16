@@ -3,7 +3,7 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-Session 13, Task 1. Covers `emptyDir`, `hostPath`, PersistentVolume, PersistentVolumeClaim,
+Session 13, Task 1. This covers `emptyDir`, `hostPath`, PersistentVolume, PersistentVolumeClaim,
 StorageClass and dynamic provisioning. Every screenshot below is my own terminal, running
 against a single-node minikube cluster (docker driver) on my Mac.
 
@@ -23,13 +23,11 @@ Each folder has a `screenshots/` directory; the images are referenced in order b
 
 | | What it is | Lives as long as | Data is stored | Good for |
 |---|---|---|---|---|
-| `emptyDir` | A scratch directory created when the Pod starts | the **Pod** | the node's disk (or RAM with `medium: Memory`) | caches, temp files, sharing files between containers in one Pod |
-| `hostPath` | A directory on the node mounted into the Pod | the **node** | a fixed path on that node | node agents, log collectors, local testing |
+| `emptyDir` | A scratch directory created when the Pod starts | the Pod | the node's disk (or RAM with `medium: Memory`) | caches, temp files, sharing files between containers in one Pod |
+| `hostPath` | A directory on the node mounted into the Pod | the node | a fixed path on that node | node agents, log collectors, local testing |
 | PersistentVolume (PV) | A piece of storage registered with the cluster | until it is deleted (independent of any Pod) | whatever backs it: disk, NFS, cloud volume, hostPath | real application data |
-| PersistentVolumeClaim (PVC) | A Pod's *request* for storage (size + access mode) | until it is deleted | in the PV it binds to | decoupling apps from storage details |
-| StorageClass | A recipe for creating PVs on demand | — | decided by its provisioner | dynamic provisioning: no admin pre-creates PVs |
-
----
+| PersistentVolumeClaim (PVC) | A Pod's request for storage (size + access mode) | until it is deleted | in the PV it binds to | decoupling apps from storage details |
+| StorageClass | A recipe for creating PVs on demand | n/a | decided by its provisioner | dynamic provisioning: no admin pre-creates PVs |
 
 ## 1. `emptyDir`: storage that dies with the Pod
 
@@ -39,7 +37,7 @@ volumes:
     emptyDir: {}
 ```
 
-**Create the Pod and check it is running**
+I created the Pod and checked it was running:
 
 ```bash
 kubectl apply -f emptydir-pod.yaml
@@ -49,7 +47,7 @@ kubectl get pods
 ![apply](01-emptydir-hostpath/screenshots/01-emptydir-apply_24BCS10244.png)
 ![get pods](01-emptydir-hostpath/screenshots/02-emptydir-get-pods_24BCS10244.png)
 
-**Write a file into the volume**
+I wrote a file into the volume:
 
 ```bash
 kubectl exec -it emptydir-demo -- bash
@@ -60,7 +58,7 @@ exit
 
 ![write file](01-emptydir-hostpath/screenshots/03-emptydir-write-file_24BCS10244.png)
 
-**Inspect the Pod**: the volume is listed as
+I inspected the Pod. The volume is listed as
 `EmptyDir (a temporary directory that shares a pod's lifetime)` and mounted at `/data`.
 
 ```bash
@@ -69,7 +67,7 @@ kubectl describe pod emptydir-demo
 
 ![describe](01-emptydir-hostpath/screenshots/04-emptydir-describe_24BCS10244.png)
 
-**Delete and recreate the Pod, then look for the file**
+I deleted and recreated the Pod, then looked for the file:
 
 ```bash
 kubectl delete pod emptydir-demo
@@ -81,10 +79,8 @@ kubectl exec emptydir-demo -- cat /data/message.txt
 ![data gone](01-emptydir-hostpath/screenshots/06-emptydir-data-gone_24BCS10244.png)
 
 `No such file or directory`: the new Pod got a brand-new, empty `emptyDir`. The data
-would have survived a *container* restart inside the same Pod, but not the Pod itself
+would have survived a container restart inside the same Pod, but not the Pod itself
 being deleted.
-
----
 
 ## 2. `hostPath`: storage that lives on the node
 
@@ -108,7 +104,7 @@ kubectl exec hostpath-demo -- cat /data/message.txt
 ![apply](01-emptydir-hostpath/screenshots/07-hostpath-apply_24BCS10244.png)
 ![write](01-emptydir-hostpath/screenshots/08-hostpath-write-file_24BCS10244.png)
 
-**The file is really on the node.** With the docker driver the "node" is the minikube
+The file is really on the node. With the docker driver the "node" is the minikube
 container, not my Mac, so I read it over `minikube ssh`:
 
 ```bash
@@ -117,7 +113,7 @@ minikube ssh -- cat /tmp/hostpath-data/message.txt
 
 ![on node](01-emptydir-hostpath/screenshots/09-hostpath-file-on-node_24BCS10244.png)
 
-**Delete and recreate the Pod: the data is still there**
+I deleted and recreated the Pod, and the data was still there:
 
 ```bash
 kubectl delete pod hostpath-demo
@@ -133,11 +129,9 @@ on a different node and find an empty directory, which is why `hostPath` is not 
 application data in production. It also gives the Pod access to the node's filesystem,
 which is a security concern.
 
-**Cleanup**
+Cleanup:
 
 ![cleanup](01-emptydir-hostpath/screenshots/12-cleanup_24BCS10244.png)
-
----
 
 ## 3. PersistentVolume + PersistentVolumeClaim (static provisioning)
 
@@ -145,7 +139,7 @@ which is a security concern.
 Pod ──uses──▶ PVC (student-pvc, 500Mi) ──binds to──▶ PV (student-pv, 1Gi) ──▶ /tmp/student-data on the node
 ```
 
-**Create the PV**
+I created the PV:
 
 ```bash
 kubectl get pv
@@ -172,13 +166,13 @@ kubectl get pv
 The notes expect `student-pvc  Bound  student-pv`. Instead the claim bound to a new volume
 `pvc-fd209db4-…` with STORAGECLASS `standard`, and `student-pv` stayed `Available`.
 
-**Root cause.** The PVC does not set `storageClassName`. minikube has a *default*
+The root cause is that the PVC does not set `storageClassName`. minikube has a default
 StorageClass (`standard`), and Kubernetes fills the default in for any claim that leaves
 the field out. A claim with class `standard` can only bind to PVs of class `standard`, and
 `student-pv` has no class, so it doesn't match. The `standard` provisioner then created a
 fresh volume for the claim.
 
-**Fix.** Set `storageClassName: ""` on the claim. An explicit empty string means "no class,
+The fix is to set `storageClassName: ""` on the claim. An explicit empty string means "no class,
 static binding only", so the claim can only bind to a pre-created PV like `student-pv`.
 
 ```bash
@@ -200,7 +194,7 @@ kubectl get pv
 
 ![fixed](02-persistent-storage/screenshots/07-create-pvc-fixed_24BCS10244.png)
 
-Now `student-pvc` is `Bound` to `student-pv`. Capacity shows **1Gi**, not the 500Mi I
+Now `student-pvc` is `Bound` to `student-pv`. Capacity shows 1Gi, not the 500Mi I
 asked for: a claim gets the whole PV it binds to.
 
 ```bash
@@ -261,12 +255,10 @@ Even after deleting the PV object, the data is still on disk:
 
 | Mode | Short | Meaning |
 |---|---|---|
-| ReadWriteOnce | RWO | read-write by Pods on **one node** |
+| ReadWriteOnce | RWO | read-write by Pods on one node |
 | ReadOnlyMany | ROX | read-only by many nodes |
 | ReadWriteMany | RWX | read-write by many nodes (needs NFS/CephFS-type storage) |
-| ReadWriteOncePod | RWOP | read-write by exactly **one Pod** |
-
----
+| ReadWriteOncePod | RWOP | read-write by exactly one Pod |
 
 ## 4. StorageClass and dynamic provisioning
 
@@ -282,7 +274,7 @@ kubectl describe storageclass standard
 `k8s.io/minikube-hostpath`, `ReclaimPolicy: Delete`, `VolumeBindingMode: Immediate`
 (the volume is created as soon as the claim exists, not when a Pod first uses it).
 
-**Create a claim and let Kubernetes make the PV**
+I created a claim and let Kubernetes make the PV:
 
 ```bash
 kubectl apply -f pvc.yaml
@@ -303,10 +295,10 @@ kubectl describe pvc dynamic-pvc
 
 ![describe pvc](03-storageclass/screenshots/05-describe-pvc_24BCS10244.png)
 
-The events show the chain: `ExternalProvisioning` → `Provisioning` →
+The events show the chain: `ExternalProvisioning`, then `Provisioning`, then
 `ProvisioningSucceeded`.
 
-**Delete the claim**
+I deleted the claim:
 
 ```bash
 kubectl delete -f pvc.yaml
@@ -318,19 +310,17 @@ kubectl get pv
 The PV disappeared with the claim. This is the opposite of section 3, because this class
 uses reclaim policy `Delete`.
 
----
-
 ## What I understood
 
-- **Data lifetime depends on where the volume comes from.** `emptyDir` lasts as long as
+- Data lifetime depends on where the volume comes from. `emptyDir` lasts as long as
   the Pod, `hostPath` as long as the node, and a PV until someone deletes it.
-- **PV and PVC split two jobs.** An admin (or a provisioner) supplies storage as a PV; a
+- PV and PVC split two jobs. An admin (or a provisioner) supplies storage as a PV; a
   developer asks for storage with a PVC and never needs to know whether it's a cloud disk
   or NFS.
-- **Static vs dynamic.** Static: the PV exists first and a claim binds to it. Dynamic: the
+- Static versus dynamic. Static: the PV exists first and a claim binds to it. Dynamic: the
   claim names a StorageClass and the PV is created on demand. On a cluster with a default
   StorageClass, a claim that leaves out `storageClassName` is dynamic, not static. That is
-  the bug I hit in section 3, and `storageClassName: ""` is how you opt out.
-- **Reclaim policy decides what happens to data when the claim goes away.** `Retain`
+  the bug I hit in section 3, and `storageClassName: ""` is how to opt out.
+- Reclaim policy decides what happens to data when the claim goes away. `Retain`
   keeps the data, so an admin has to clean it up; `Delete` removes it, which is the
   default for dynamic volumes.

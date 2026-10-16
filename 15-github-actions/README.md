@@ -4,17 +4,17 @@
 **Enrollment number:** 24BCS10244
 
 This session is about automating the path from `git push` to a deliverable build. I worked
-through every part of the lecture (CI vs CD, the pipeline stages, workflows, jobs, steps,
-runners, secrets, artifacts, and the build-and-test pipeline). I rebuilt the instructor's
-`demo/` project from scratch, including the student hands-on task, and turned the lecture's
+through every part of the lecture: CI vs CD, the pipeline stages, workflows, jobs, steps,
+runners, secrets, artifacts and the build-and-test pipeline. I rebuilt the instructor's
+`demo/` project from scratch, including the hands-on task, and turned the lecture's
 `10-final-cicd-pipeline` into a complete CI/CD project. For that project I added a
 `Dockerfile` and a CD stage that builds, smoke-tests and (on `main` only) pushes a container
-image to GitHub Container Registry. GitHub itself was not used: every workflow was executed
-locally with [`act`](https://github.com/nektos/act), which runs the same YAML files in Docker
-containers. The screenshots are my own terminal. Pushing the final project to GitHub is the
-one step left, listed at the end.
+image to GitHub Container Registry. I did not use GitHub itself. Every workflow was run
+locally with [`act`](https://github.com/nektos/act), which runs the same YAML files in
+Docker containers. The screenshots are from my own terminal. Pushing the final project to
+GitHub is the one step I have not done, and it is described at the end.
 
-## Homework task → where to find it
+## Homework tasks and where to find them
 
 | Homework item | Folder |
 |---|---|
@@ -22,8 +22,8 @@ one step left, listed at the end.
 | GitHub Actions, workflows, jobs, steps, runners | [`02-workflows-jobs-runners/`](02-workflows-jobs-runners/) |
 | Secrets, artifacts | [`03-secrets-and-artifacts/`](03-secrets-and-artifacts/) |
 | Build, test, pipeline execution (pass → fail → fix) | [`04-build-and-test/`](04-build-and-test/) |
-| Instructor demo walkthrough + student hands-on task | [`05-demo-project/`](05-demo-project/) |
-| **Final project**: application source code, Dockerfile, GitHub Actions workflow, CI pipeline, CD pipeline, screenshots of pipeline execution, README | [`final-cicd-project/`](final-cicd-project/) |
+| Instructor demo walkthrough and the hands-on task | [`05-demo-project/`](05-demo-project/) |
+| Final project: application source code, Dockerfile, GitHub Actions workflow, CI pipeline, CD pipeline, screenshots of pipeline execution, README | [`final-cicd-project/`](final-cicd-project/) |
 
 Lecture → folder: `01-ci-vs-cd` + `02-cicd-pipeline` → `01`; `03-github-actions`,
 `04-workflows`, `05-jobs-and-steps`, `06-runners` → `02`; `07-secrets`, `08-artifacts` → `03`;
@@ -51,9 +51,9 @@ screenshots show a filtered view of the run; the full output was only kept local
 
 ## Environment notes
 
-- **Machine:** macOS on Apple Silicon, Docker Desktop, act 0.2.89, Homebrew Python 3.14.
-  This session doesn't use Kubernetes, so no namespace was needed.
-- **GitHub Actions → act.** Wherever the notes say "push, then open the Actions tab", I ran
+- Machine: macOS on Apple Silicon, Docker Desktop, act 0.2.89, Homebrew Python 3.14. This
+  session doesn't use Kubernetes, so no namespace was needed.
+- GitHub Actions and act: wherever the notes say "push, then open the Actions tab", I ran
   `act <event>` instead. Workflows that only have `workflow_dispatch` were started with
   `act workflow_dispatch`, the others with `act push`. Flags used on every run:
   - `-P ubuntu-latest=catthehacker/ubuntu:act-latest`: the runner image, passed
@@ -64,23 +64,23 @@ screenshots show a filtered view of the run; the full output was only kept local
   - `--no-cache-server`: act otherwise opens a cache server on a random port, and no
     workflow here uses `actions/cache`.
   - `--artifact-server-port 18160 --artifact-server-path <dir>`: act's local artifact
-    server, moved from its default port 34567 to my assigned range (18160–18169).
+    server, moved from its default port 34567 to my assigned range (18160-18169).
   - `-s DEMO_SECRET=hello-github-actions`: the lecture's fake demo secret.
-- **Differences between act and GitHub** that show up in the screenshots: the runner
+- Differences between act and GitHub that show up in the screenshots: the runner
   hostname is `docker-desktop` and the CPU is `aarch64`; times are in UTC; act copies the
   local folder instead of cloning; skipped steps are not printed; the "artifact download
   URL" is fake; `github.repository` comes from the local git remote (see
   `final-cicd-project`, step 15).
-- **Python:** global `pip install` is blocked on Homebrew Python (PEP 668), so I used a
+- Python: global `pip install` is blocked on Homebrew Python (PEP 668), so I used a
   virtual environment kept outside the homework repo (failure and fix in
   `04-build-and-test`, step 2).
-- **Git:** the lecture's `git init` / `add` / `commit` steps for the demo and final projects
-  were done in scratch copies **outside** this homework repo, with a repo-local identity
+- Git: the lecture's `git init` / `add` / `commit` steps for the demo and final projects
+  were done in scratch copies outside this homework repo, with a repo-local identity
   and no remote. Nothing was pushed anywhere, and no image was pushed to a registry. The
   folders here are copies of those projects' final state (without `.git/`).
-- **Action versions:** `actions/checkout@v6` and `actions/setup-python@v7` from the notes
-  exist and work; no version fix was needed (`02-workflows-jobs-runners`, step 1).
-- **Cleanup:** `build/`, `.pytest_cache/`, `__pycache__/`, the local artifact folder and
+- Action versions: `actions/checkout@v6` and `actions/setup-python@v7` from the notes
+  exist and work, so no version fix was needed (`02-workflows-jobs-runners`, step 1).
+- Cleanup: `build/`, `.pytest_cache/`, `__pycache__/`, the local artifact folder and
   the Docker images built during the session were removed.
 
 ## Problems found in the lecture material
@@ -94,12 +94,11 @@ screenshots show a filtered view of the run; the full output was only kept local
 
 None of these broke a workflow. All lecture workflows ran as written.
 
----
+## Not done: pushing to GitHub
 
-## Pending: needs the student
-
-These steps need my GitHub account, so they are not done yet. The `gh` CLI on this Mac is
-logged in to my **work** account; the homework account is **`abdur-code`**.
+These steps need my GitHub account, so I have not done them yet. The `gh` CLI on this Mac
+is logged in to my work account, and the homework account is `abdur-code`. This is the
+list of commands I plan to run:
 
 ```bash
 # 1. Make the final project its own repository (workflows only run from .github/ at the repo root)
@@ -145,12 +144,13 @@ docker pull ghcr.io/abdur-code/session16-calculator:latest
 gh auth switch --hostname github.com --user <work-account>
 ```
 
-Without `gh`: create the repo on github.com while logged in as `abdur-code`, add the
-secret in the web UI as in step 4, then do steps 1, 3 (only `git remote add …`) and 5 from
-the terminal. The `github-personal` SSH alias already points at the personal key.
+Without `gh`, the same can be done by creating the repo on github.com as `abdur-code`,
+adding the secret in the web UI as in step 4, and then running steps 1, 3 (only
+`git remote add …`) and 5 from the terminal. The `github-personal` SSH alias already
+points at the personal key.
 
-Screenshots to add afterwards (save into `final-cicd-project/screenshots/` with the same
-naming): the green run in the Actions tab with all four jobs, the run Summary showing the
-`calculator-build` artifact, and the `session16-calculator` package page. Optional: repeat
-the break/fix cycle from `final-cicd-project` steps 6–8 with real pushes to get a red run
-followed by a green one.
+Once that is done I still need to add screenshots to `final-cicd-project/screenshots/`
+with the same naming: the green run in the Actions tab with all four jobs, the run
+Summary showing the `calculator-build` artifact, and the `session16-calculator` package
+page. I could also repeat the break/fix cycle from `final-cicd-project` steps 6-8 with
+real pushes to get a red run followed by a green one.

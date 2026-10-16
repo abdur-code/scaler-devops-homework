@@ -7,10 +7,8 @@ Session 14, Task 1. `kubectl get` tells me something is wrong; `kubectl describe
 the details and the Events that usually explain it.
 
 Files: `demo-pod.yaml` (an `nginx:1.27` Pod called `describe-demo`). The lecture folder
-also has a `demo-chart/` directory: a default `helm create` scaffold that this lesson never
+also has a `demo-chart/` directory, a default `helm create` scaffold that this lesson never
 uses, so I didn't copy it.
-
----
 
 ## 1. Create the Pod
 
@@ -25,12 +23,12 @@ ls
 
 `error: the path "pod.yaml" does not exist`.
 
-**Root cause.** The lecture README says `kubectl apply -f pod.yaml`, but the manifest in
-this folder is called `demo-pod.yaml`. It's a doc/file-name mismatch; the YAML itself is
-fine.
+Root cause: the lecture README says `kubectl apply -f pod.yaml`, but the manifest in
+this folder is called `demo-pod.yaml`. It's a mismatch between the doc and the file name;
+the YAML itself is fine.
 
-**Fix.** Use the real file name. I added a two-line comment at the top of my copy of
-`demo-pod.yaml` so the next person doesn't trip on it.
+Fix: I used the real file name, and added a two-line comment at the top of my copy of
+`demo-pod.yaml` about it.
 
 ```bash
 kubectl apply -f demo-pod.yaml
@@ -50,9 +48,9 @@ kubectl describe pod describe-demo
 
 ![describe pod](screenshots/03-describe-pod_24BCS10244.png)
 
-The sections I'll be looking at in every later problem:
+These are the sections I looked at in every later problem:
 
-| Section | What it showed here | Why it matters when debugging |
+| Section | What it showed here | Use when debugging |
 |---|---|---|
 | Node / IP | `minikube/192.168.49.2`, `10.244.0.71` | `Node: <none>` means it was never scheduled |
 | Labels | `app=describe-demo` | must match a Service selector |
@@ -78,9 +76,9 @@ kubectl describe node minikube | grep -A 12 "Allocated resources"
 ![describe node](screenshots/04-describe-node_24BCS10244.png)
 
 The node has no taints, all pressure conditions are `False`, and `Ready` is `True`. It
-has 15 CPUs and `8123872Ki` (about 7.7Gi) of memory allocatable; at that moment about 9%
-CPU and 8% memory were requested by Pods. I used these numbers again in the Pending
-scenario (`scenarios/scenario-3-pending`).
+has 15 CPUs and `8123872Ki` (about 7.7Gi) of memory allocatable; at that moment Pods had
+requested about 9% of the CPU and 8% of the memory. I used these numbers again in the
+Pending scenario (`scenarios/scenario-3-pending`).
 
 ## 4. Cleanup
 
@@ -90,15 +88,13 @@ kubectl delete -f demo-pod.yaml
 
 ![cleanup](screenshots/05-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
-- `get` answers "what"; `describe` answers "why", mostly through the State, Last State,
-  Conditions and Events sections.
-- Events read like a timeline: if it stops at `Scheduled` the problem is the image or
-  volumes; if there is no `Scheduled` at all, the scheduler couldn't place the Pod.
+- `get` shows what is happening; `describe` shows why, mostly through the State, Last
+  State, Conditions and Events sections.
+- Events read like a timeline. If it stops at `Scheduled`, the problem is the image or
+  volumes. If there is no `Scheduled` at all, the scheduler couldn't place the Pod.
 - `describe node` shows capacity, what is already allocated, taints and pressure
-  conditions, which is what I need to explain `Pending` Pods.
-- Not every error is in the cluster. The first one here was simply a wrong file name in
-  the notes.
+  conditions, which I need to explain `Pending` Pods.
+- Not every error comes from the cluster. The first one here was just a wrong file name
+  in the notes.

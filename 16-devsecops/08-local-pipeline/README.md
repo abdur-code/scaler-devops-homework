@@ -1,4 +1,4 @@
-# 8. The Whole Pipeline, Locally: `devsecops-pipeline.sh`
+# 8. The whole pipeline, locally: `devsecops-pipeline.sh`
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -6,7 +6,7 @@
 Sections 1 to 7 ran each stage by hand. [`../devsecops-pipeline.sh`](../devsecops-pipeline.sh)
 chains them in the homework's order and stops at the first stage that fails, the same
 way `needs:` chains the GitHub Actions jobs. It is the local proof that the whole flow
-works end to end, including the deploy that GitHub's runners can't do against my
+works end to end, including the deploy that GitHub's runners cannot do against my
 laptop's cluster.
 
 ```text
@@ -27,9 +27,9 @@ Code → Build → Unit Test → SAST → SCA → Secret Scan → Docker Build
 | 9 | Push Image | `minikube image load hey-cicd:<tag>` | load error |
 | 10 | Deploy | apply manifests with the new tag, `rollout status`, curl `/health` through a port-forward | rollout or smoke test fails |
 
-Details worth knowing:
+Some details about the script:
 
-- **Tag = hash of the image inputs** (`app/`, `requirements.txt`, `Dockerfile`,
+- The tag is a hash of the image inputs (`app/`, `requirements.txt`, `Dockerfile`,
   `.dockerignore`). The same code always gets the same tag, and any change gets a new
   one, so the Deployment always rolls when the code changed. (In CI the tag is the
   commit SHA.)
@@ -40,7 +40,7 @@ Details worth knowing:
   `.pytest_cache` out of the project.
 - "Push" is `minikube image load`, the local stand-in for a registry. Pushing to a real
   registry (GHCR) is what the GitHub Actions workflow does in section 9.
-- The smoke test port-forwards on **18175** (my port range) and stops the forward when
+- The smoke test port-forwards on 18175 (my port range) and stops the forward when
   the script exits.
 - `VENV` (my venv outside the repo) and `NS` (default `devsecops-lab`) can be overridden.
 
@@ -57,7 +57,7 @@ sed -i "" "s|debug=os.environ.get(\"FLASK_DEBUG\") == \"1\",|debug=True,|" "$WOR
 
 ![stops at sast](screenshots/01-pipeline-stops-at-sast_24BCS10244.png)
 
-Build and tests pass (debug mode doesn't break any test), then bandit reports `B201
+Build and tests pass (debug mode does not break any test), then bandit reports `B201
 [HIGH]` at line 255 and the run ends with `FAILED at stage 3/10`. No image was built.
 
 ## 8.2 A gate failing: the image gate stops the pipeline
@@ -75,8 +75,8 @@ cp "$DEMO/Dockerfile" "$WORK/gate-fail/Dockerfile" && head -n 1 "$WORK/gate-fail
 Stages 1 to 7 pass. The code is fine, so SAST, SCA and secret scanning have nothing to
 complain about. The image scan counts `HIGH=44`, and the security gate lists the first
 findings (util-linux, `no fix yet`), says `44 HIGH/CRITICAL findings: image is NOT pushed
-or deployed`, and stops at **stage 8/10**. This is exactly the case the lecture's workflow
-would have let through.
+or deployed`, and stops at stage 8/10. The lecture's workflow would have let this case
+through.
 
 ## 8.3 Full successful run, end to end
 
@@ -87,8 +87,8 @@ kubectl delete namespace devsecops-lab
 VENV=$VENV ./devsecops-pipeline.sh hey-cicd
 ```
 
-(`VENV=$VENV` just makes explicit that the script uses my out-of-repo virtualenv; without
-it the script creates `hey-cicd/.venv`, which is git-ignored.) I took this run last, after
+`VENV=$VENV` just makes explicit that the script uses my out-of-repo virtualenv. Without
+it the script creates `hey-cicd/.venv`, which is git-ignored. I took this run last, after
 the digest pin from section 9, so it shows the final state of the project.
 
 ![pipeline success](screenshots/03-pipeline-success_24BCS10244.png)
@@ -122,12 +122,13 @@ The namespace (and with it the Deployment, Pods and Service) is gone, minikube h
 
 ## What I understood
 
-- A pipeline is a chain of gates. Ordering matters: the cheap, fast checks (tests,
-  SAST, SCA, secrets: seconds) run before the expensive ones (image build and scan),
-  so a bad commit fails as early and cheaply as possible.
-- "Stop at the first failure" is the security property. The interesting test of a
-  pipeline is the failing run, not the green one: 8.1 and 8.2 prove that a debug-mode
-  app or a vulnerable image can't reach the cluster.
+- A pipeline is a chain of gates, and the order matters. The cheap, fast checks (tests,
+  SAST, SCA, secrets: seconds) run before the expensive ones (image build and scan), so a
+  bad commit fails as early and cheaply as possible.
+- Stopping at the first failure is what makes the pipeline a security control. The
+  failing runs say more than the green one, and 8.1 and 8.2 show that a debug-mode app
+  or a vulnerable image cannot reach the cluster.
 - The image that gets deployed is the one that was scanned: same tag, built once.
-- Writing it as one script made the policy explicit. Every threshold (coverage 60%,
-  bandit MEDIUM+, Trivy HIGH/CRITICAL) is in one place and the same as in the workflow.
+- Writing it as one script put the policy in one place. Every threshold (coverage 60%,
+  bandit MEDIUM+, Trivy HIGH/CRITICAL) is in the script and is the same as in the
+  workflow.

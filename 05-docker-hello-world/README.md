@@ -1,7 +1,7 @@
 # Docker: Hello World Applications
 
-Six Hello World web apps, one folder each, one Dockerfile each. All six were built, run
-and opened in a browser. Screenshots are in [screenshots/](screenshots/).
+Six Hello World web apps, one folder each, one Dockerfile each. I built all six, ran them
+and opened each in a browser. Screenshots are in [screenshots/](screenshots/).
 
 ## Folder structure
 
@@ -28,18 +28,16 @@ and opened in a browser. Screenshots are in [screenshots/](screenshots/).
 | nginx-app | `nginx:1.27-alpine` | 80 | 8105 | 75.9 MB |
 | React-app | node build → `nginx:1.27-alpine` | 80 | 8106 | 76.1 MB |
 
-I put every app on a host port in the 81xx range rather than using each app's default
-port. It keeps them all reachable at once and avoids clashing with whatever is already
-running on 3000, 5000 or 8080. Only the host side of the mapping changed; each app still
-listens on its normal port inside its own container.
-
----
+I put every app on a host port in the 81xx range instead of its default port. That keeps
+all of them reachable at once and avoids clashing with whatever is already running on
+3000, 5000 or 8080. Only the host side of the mapping changed. Each app still listens on
+its normal port inside its own container.
 
 ## 1. nodejs-app
 
-`server.js` uses Node's own `http` module, so the app has **no npm dependencies at
-all**. Express would work equally well; the standard library is enough for one route and
-it means the image needs no install step.
+`server.js` uses Node's own `http` module, so the app has no npm dependencies at all.
+Express would also work, but the standard library is enough for one route and the image
+needs no install step.
 
 ```dockerfile
 FROM node:22-alpine
@@ -52,15 +50,15 @@ EXPOSE 3000
 CMD ["node", "server.js"]
 ```
 
-The one detail that matters is in `server.js`:
+The detail that matters is in `server.js`:
 
 ```js
 server.listen(PORT, '0.0.0.0', () => { ... });
 ```
 
-Bound to `0.0.0.0`, not `127.0.0.1`. A container's loopback belongs to the container, so
-an app bound to `127.0.0.1` is unreachable from outside no matter what `-p` says. This is
-the single most common reason a published port appears to do nothing.
+It binds to `0.0.0.0` and not `127.0.0.1`. A container's loopback belongs to the
+container, so an app bound to `127.0.0.1` cannot be reached from outside whatever `-p`
+says. That is a common reason for a published port that seems to do nothing.
 
 ```text
 $ docker build -t hello-node 05-docker-hello-world/nodejs-app
@@ -74,8 +72,6 @@ $ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8101
 ```
 
 ![nodejs-app Hello World](screenshots/nodejs-app.png)
-
----
 
 ## 2. python-app
 
@@ -95,18 +91,18 @@ EXPOSE 8000
 CMD ["python", "app.py"]
 ```
 
-Two deliberate choices here:
+Two choices in this Dockerfile:
 
-**`requirements.txt` is copied on its own, before `app.py`.** Docker caches each
-instruction as a layer and reuses it while its inputs are unchanged. Copying only the
-dependency file first means editing `app.py` reuses the cached `pip install` layer, so
-the rebuild is instant instead of re-downloading Flask. If both were copied in one
-`COPY . .`, every source edit would invalidate the install.
+`requirements.txt` is copied on its own, before `app.py`. Docker caches each instruction
+as a layer and reuses it while its inputs are unchanged. Copying only the dependency file
+first means editing `app.py` reuses the cached `pip install` layer, so the rebuild is
+instant instead of downloading Flask again. If both were copied in one `COPY . .`, every
+source edit would invalidate the install.
 
-**`--no-cache-dir`** stops pip keeping its download cache inside the image, where it
+`--no-cache-dir` stops pip from keeping its download cache inside the image, where it
 would only add weight.
 
-`app.run(host="0.0.0.0", port=8000)` for the same reason as the Node app.
+The app uses `app.run(host="0.0.0.0", port=8000)` for the same reason as the Node app.
 
 ```text
 $ docker run -d --name hw-python -p 8102:8000 hello-python
@@ -117,20 +113,18 @@ Press CTRL+C to quit
 192.168.65.1 - - [03/Sep/2026 17:22:08] "GET / HTTP/1.1" 200 -
 ```
 
-Flask's dev server prints a warning about not being production-ready, which is fair —
-a real deployment would put gunicorn or uvicorn in front. For Hello World it is fine.
+Flask's dev server prints a warning about not being production-ready. A real deployment
+would put gunicorn or uvicorn in front, but for Hello World the dev server is fine.
 
 ![python-app Hello World](screenshots/python-app.png)
-
----
 
 ## 3. java-app
 
 `Hello.java` uses `com.sun.net.httpserver`, which ships inside the JDK, so there is no
 Maven, no Gradle and no third-party jar.
 
-This is the only one of the six that needs a **two-stage build**, because Java has a
-genuine compile step:
+This is the only one of the six that needs a two-stage build, because Java has a compile
+step:
 
 ```dockerfile
 FROM eclipse-temurin:21-jdk-alpine AS build
@@ -149,15 +143,14 @@ EXPOSE 8080
 CMD ["java", "Hello"]
 ```
 
-Stage one has the full JDK and produces `Hello.class`. Stage two starts from a clean
-JRE image and copies in just that one file. The compiler never reaches the shipped
-image.
+Stage one has the full JDK and produces `Hello.class`. Stage two starts from a clean JRE
+image and copies in just that one file, so the compiler never reaches the shipped image.
 
 I first wrote this as a single stage using `CMD ["java", "Hello.java"]`, which works
 because the JDK can compile and run a single source file in one step. It is fewer lines,
-but the image came out at **555 MB** because the whole JDK has to stay. Splitting it into
-two stages brought it down to **286 MB** for exactly the same behaviour, so the two
-stages are worth the four extra lines.
+but the image came out at 555 MB because the whole JDK has to stay. Splitting it into two
+stages brought it down to 286 MB with the same behaviour, so the four extra lines are
+worth it.
 
 ```text
 $ docker run -d --name hw-java -p 8103:8080 hello-java
@@ -168,11 +161,10 @@ java-app listening on port 8080
 
 ![java-app Hello World](screenshots/java-app.png)
 
----
-
 ## 4. Apache-app
 
-No application code at all — a static page dropped into the official Apache image.
+There is no application code here, only a static page dropped into the official Apache
+image.
 
 ```dockerfile
 FROM httpd:2.4-alpine
@@ -182,9 +174,9 @@ COPY index.html /usr/local/apache2/htdocs/index.html
 EXPOSE 80
 ```
 
-`/usr/local/apache2/htdocs` is where this image's Apache serves from. There is
-deliberately **no `CMD`**: the base image already starts `httpd` in the foreground.
-Adding one would only risk overriding something that already works.
+`/usr/local/apache2/htdocs` is where this image's Apache serves from. There is no `CMD`
+because the base image already starts `httpd` in the foreground, and adding one could
+only override something that already works.
 
 ```text
 $ docker run -d --name hw-apache -p 8104:80 hello-apache
@@ -192,11 +184,9 @@ $ docker run -d --name hw-apache -p 8104:80 hello-apache
 
 ![Apache-app Hello World](screenshots/Apache-app.png)
 
----
-
 ## 5. nginx-app
 
-Same idea, different document root.
+Same idea with a different document root.
 
 ```dockerfile
 FROM nginx:1.27-alpine
@@ -210,12 +200,10 @@ EXPOSE 80
 $ docker run -d --name hw-nginx -p 8105:80 hello-nginx
 ```
 
-At **75.9 MB** this is the smallest of the six, because it is a web server and one HTML
-file with no language runtime at all.
+At 75.9 MB this is the smallest of the six, because it is a web server and one HTML file
+with no language runtime.
 
 ![nginx-app Hello World](screenshots/nginx-app.png)
-
----
 
 ## 6. React-app
 
@@ -237,9 +225,9 @@ COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 ```
 
-This is the most useful pattern of the six. Node, Vite and React are needed to *produce*
-`dist/`. Once it exists, the app is plain HTML, CSS and JS, and nothing in the build
-toolchain is needed to serve it. I checked what each stage actually holds:
+This is the multi-stage pattern with the most payoff of the six. Node, Vite and React are
+needed to produce `dist/`. Once it exists, the app is plain HTML, CSS and JS, and nothing
+from the build toolchain is needed to serve it. I checked what the build stage holds:
 
 ```text
 $ docker build -t react-buildstage --target build React-app
@@ -250,30 +238,28 @@ $ docker run --rm react-buildstage sh -c 'ls node_modules | wc -l; du -sh node_m
 ```
 
 39.6 MB of `node_modules` produces 156 KB of output. Only that 156 KB reaches the final
-image, which is why it comes out at **76.1 MB**, essentially the same as the bare nginx
-app, versus 228 MB for the Node image that still carries a runtime.
+image, which is why the image is 76.1 MB, about the same as the bare nginx app, against
+228 MB for the Node image that still carries a runtime.
 
 There is also a `.dockerignore` listing `node_modules` and `dist`, so a local build on my
-Mac never gets copied into the image where it would shadow the one built inside it.
+Mac does not get copied into the image, where it would shadow the one built inside.
 
 ```text
 $ docker run -d --name hw-react -p 8106:80 hello-react
 ```
 
-One thing I noticed verifying this one: `curl` returns an almost empty page —
+When I verified this one, `curl` returned an almost empty page:
 
 ```text
 $ curl -s http://localhost:8106 | grep -o "<h1>[^<]*</h1>"
 (nothing)
 ```
 
-— because a React page is an empty `<div id="root">` plus a script tag, and the heading
-only exists after the browser runs the JavaScript. The HTTP status is still 200. So
-`curl` cannot verify this app; the browser screenshot is the actual proof.
+A React page is an empty `<div id="root">` plus a script tag, and the heading only exists
+after the browser runs the JavaScript. The HTTP status is still 200. So `curl` cannot
+verify this app, and the browser screenshot is the proof.
 
 ![React-app Hello World](screenshots/react-app.png)
-
----
 
 ## Building and running all six
 
@@ -345,8 +331,8 @@ $ for p in 8101 8102 8103 8104 8105 8106; do
 8106 :
 ```
 
-All six return 200 and five of the six serve the heading directly. The blank one is
-React, for the reason explained above.
+All six return 200 and five serve the heading directly. The blank one is React, for the
+reason explained above.
 
 ### Cleanup
 
@@ -355,37 +341,33 @@ docker rm -f hw-node hw-python hw-java hw-apache hw-nginx hw-react
 docker rmi hello-node hello-python hello-java hello-apache hello-nginx hello-react
 ```
 
----
-
 ## What I took away from this
 
-**A Dockerfile is just the setup steps you would run by hand, written down.** Pick a
-base image, copy the code in, install what it needs, declare the port, give the command
-that starts it.
+A Dockerfile is the setup steps I would run by hand, written down: pick a base image,
+copy the code in, install what it needs, declare the port, and give the command that
+starts it.
 
-**`EXPOSE` publishes nothing.** It is documentation that records which port the app uses.
-`-p 8101:3000` on `docker run` is what actually opens a port, and it reads
-`host:container`. That is why the Node app can listen on 3000 internally and be served
-on 8101.
+`EXPOSE` publishes nothing. It only records which port the app uses. `-p 8101:3000` on
+`docker run` is what opens a port, and it reads `host:container`. That is why the Node
+app can listen on 3000 internally and be served on 8101.
 
-**The app must bind `0.0.0.0`.** Bound to `127.0.0.1` it is only reachable from inside
-its own container, and the port mapping looks broken when it is the app that is wrong.
+The app has to bind `0.0.0.0`. Bound to `127.0.0.1` it can only be reached from inside its
+own container, and the port mapping looks broken when the app is what is wrong.
 
-**Layer order decides your rebuild time.** Copy the dependency manifest and install
-before copying source, so source edits do not trigger a reinstall.
+Layer order decides rebuild time. Copying the dependency manifest and installing before
+copying the source means source edits do not trigger a reinstall.
 
-**Multi-stage builds pay off when the build output differs from its input.** React is the
+Multi-stage builds pay off when the build output differs from its input. React is the
 clearest case: 76 MB instead of 228 MB, because only `dist/` survives. Java is the same
-argument with a compiler: 286 MB instead of 555 MB. For an interpreted app with no build
-step there is much less to gain — see [../06-docker-multistage/](../06-docker-multistage/)
-where the saving was only 6 MB.
+idea with a compiler: 286 MB instead of 555 MB. An interpreted app with no build step
+gains much less. In [../06-docker-multistage/](../06-docker-multistage/) the saving was
+only 6 MB.
 
-**Static apps need no `CMD`.** Apache and nginx already start their servers. The three
-application images need one, because otherwise the container would have nothing to run
-and would exit immediately.
+Static apps need no `CMD`, because Apache and nginx already start their servers. The
+three application images need one, otherwise the container would have nothing to run and
+would exit immediately.
 
-**Alpine variants are worth defaulting to.** I built the same Python app both ways to
-check:
+Alpine variants are a good default. I built the same Python app both ways to check:
 
 ```text
 $ docker images
@@ -393,6 +375,6 @@ hello-python-slim   234MB
 hello-python        108MB
 ```
 
-Changing one word in the `FROM` line more than halved the image. The caveat is that
-Alpine uses musl instead of glibc, so a dependency needing compiled C extensions can
-fail to build there — at which point `-slim` is the fallback.
+Changing one word in the `FROM` line more than halved the image. The catch is that Alpine
+uses musl instead of glibc, so a dependency that needs compiled C extensions can fail to
+build there, and then `-slim` is the fallback.

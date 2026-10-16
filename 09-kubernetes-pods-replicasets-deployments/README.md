@@ -3,12 +3,12 @@
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
 
-The three core workload objects, built up in order — a bare Pod, a ReplicaSet that keeps a
-set of Pods alive, and a Deployment that manages ReplicaSets so you get rolling updates and
+I built the three core workload objects in order: a bare Pod, a ReplicaSet that keeps a
+set of Pods alive, and a Deployment that manages ReplicaSets and gives rolling updates and
 rollbacks. Every command output below was run on my machine and pasted in.
 
 The images in each folder are rendered from the terminal transcripts captured during
-these runs — same text as the blocks below, just easier to scan.
+these runs. They have the same text as the blocks below, just easier to scan.
 
 ## Folder structure
 
@@ -28,11 +28,9 @@ these runs — same text as the blocks below, just easier to scan.
 | 2 | ReplicaSet | a fixed number of identical Pods | yes | no |
 | 3 | Deployment | ReplicaSets | yes | yes |
 
-All three manifests use the label `app: nginx`, so each task deletes its object before the
-next one starts. Left running, the ReplicaSet would **adopt** the standalone Pod — its
-selector matches — and create only two new pods instead of three.
-
----
+All three manifests use the label `app: nginx`, so I deleted each object before starting
+the next one. If the standalone Pod were still running, the ReplicaSet would adopt it
+because its selector matches, and it would create only two new pods instead of three.
 
 ## 1. Pod
 
@@ -62,10 +60,10 @@ NAME        READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED
 nginx-pod   1/1     Running   0          15s   10.244.0.3   minikube   <none>           <none>
 ```
 
-The Pod got `10.244.0.3` — an address on the cluster's pod network, handed out by the CNI
-plugin. It is not reachable from macOS; only from inside the cluster.
+The Pod got `10.244.0.3`, an address on the cluster's pod network handed out by the CNI
+plugin. It is not reachable from macOS, only from inside the cluster.
 
-`describe` is trimmed here to the fields that matter:
+I trimmed `describe` to the fields that matter:
 
 ```text
 $ kubectl describe pod nginx-pod | head -25
@@ -87,7 +85,7 @@ Containers:
 ```
 
 The container ID is prefixed `containerd://`, not `docker://`. minikube uses containerd as
-its runtime even though the *driver* is Docker — Docker Desktop provides the machine, and
+its runtime even though the driver is Docker: Docker Desktop provides the machine, and
 containerd runs the containers inside it.
 
 ```text
@@ -97,7 +95,7 @@ $ kubectl logs nginx-pod | head -5
 /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
 ```
 
-### The part that defines a Pod
+### Deleting the Pod
 
 ```text
 $ kubectl delete pod nginx-pod
@@ -107,25 +105,21 @@ $ kubectl get pods
 No resources found in default namespace.
 ```
 
-Nothing brought it back. A bare Pod has no controller watching it, so deleting it is final
-— and so is a node failure or an eviction. This is exactly the gap the next two objects
-close, and it is why you almost never write a bare Pod in production.
+Nothing brought it back. A bare Pod has no controller watching it, so deleting it is final,
+and so is a node failure or an eviction. The next two objects close this gap, which is why
+a bare Pod is almost never used in production.
 
-![A bare Pod created, inspected and deleted — nothing recreates it](01-pod/pod_24BCS10244.png)
+![A bare Pod created, inspected and deleted, with nothing recreating it](01-pod/pod_24BCS10244.png)
 
 ### What I understood
 
 A Pod is the unit Kubernetes schedules, not a container. Everything in one Pod shares a
-network namespace and an IP, which is why sidecar patterns work — two containers in a Pod
+network namespace and an IP, which is why sidecar patterns work: two containers in a Pod
 reach each other on `localhost`.
 
-What I did not appreciate before running this is how completely unprotected a bare Pod is.
-There is no controller watching it, so deleting it is final, and so is a node failure or an
-eviction under memory pressure. `RESTARTS` counts a *container* crashing and being restarted
-in place; it does nothing if the Pod object itself disappears. That gap is the entire reason
-the next two objects exist.
-
----
+Before running this I had not realised how unprotected a bare Pod is. `RESTARTS` counts a
+container crashing and being restarted in place. It does nothing if the Pod object itself
+disappears, and an eviction under memory pressure does that too.
 
 ## 2. ReplicaSet
 
@@ -157,8 +151,8 @@ spec:
 ```
 
 `spec.selector.matchLabels` and `spec.template.metadata.labels` have to agree. The selector
-is what the ReplicaSet counts; the template labels are what it stamps on the pods it makes.
-If they disagree, it creates pods it cannot see and loops forever.
+is what the ReplicaSet counts, and the template labels are what it stamps on the pods it
+makes. If they disagree, it creates pods it cannot see, counts zero and keeps creating more.
 
 ```text
 $ kubectl get rs
@@ -185,13 +179,13 @@ nginx-rs-pmlb6   1/1     Running   0          15s
 nginx-rs-pshbl   1/1     Running   0          15s
 ```
 
-Still three pods, but look at the ages. `bl55r` is gone and `g7h5m` is 7 seconds old while
-the two survivors are 15. The controller noticed the count had dropped below `replicas: 3`
-and created a replacement within seconds.
+There are still three pods, and the ages show what happened. `bl55r` is gone and `g7h5m`
+is 7 seconds old while the two survivors are 15. The controller noticed the count had
+dropped below `replicas: 3` and created a replacement within seconds.
 
-The replacement is a **new pod with a new name and a new IP** — not the old one restarted.
-`RESTARTS` stays `0`. That is the whole reason Services exist: you cannot hardcode a pod IP
-when the platform is free to replace pods underneath you.
+The replacement is a new pod with a new name and a new IP, not the old one restarted, and
+`RESTARTS` stays `0`. This is why Services exist: a pod IP cannot be hardcoded when the
+platform is free to replace pods.
 
 ### Scaling
 
@@ -208,19 +202,14 @@ nginx-rs   5         5         5       21s
 
 ### What I understood
 
-The ReplicaSet controller does not repair the pod I deleted — it creates a different one.
-New name, new IP, `RESTARTS` still `0`. It reconciles a **count**, not an identity, and once
-that clicked the design of the next section made sense: if the platform is free to replace
-pods underneath me, no client can hold a pod IP, so something stable has to sit in front.
-That something is a Service.
+The ReplicaSet controller does not repair the pod I deleted. It creates a different one,
+with a new name and new IP, and `RESTARTS` is still `0`. It reconciles a count, not an
+identity. So no client can hold a pod IP, and something stable has to sit in front of the
+pods. That something is a Service.
 
-The selector is also easy to get wrong in a way that fails quietly. `spec.selector` is what
-the ReplicaSet counts and `spec.template.metadata.labels` is what it stamps on new pods. If
-they disagree it creates pods it cannot see, counts zero, and creates more forever. Related:
-because this manifest and `pod.yml` share `app: nginx`, leaving the bare Pod running would
-have let the ReplicaSet adopt it and create only two pods of its own.
-
----
+A mismatched selector fails quietly, as described above. A related thing is that this
+manifest and `pod.yml` share `app: nginx`, so leaving the bare Pod running would have let
+the ReplicaSet adopt it and create only two pods of its own.
 
 ## 3. Deployment
 
@@ -266,11 +255,11 @@ pod/nginx-deployment-6946987795-pz7mb   1/1     Running   0          1s
 pod/nginx-deployment-6946987795-scrnc   1/1     Running   0          1s
 ```
 
-I did not create a ReplicaSet — the Deployment did, named `nginx-deployment-6946987795`.
-That suffix is a hash of the pod template, which matters in a moment.
+I did not create a ReplicaSet. The Deployment did, and named it `nginx-deployment-6946987795`.
+The suffix is a hash of the pod template, which matters in a moment.
 
-Worth noting: `kubectl get deploy -l app=nginx` returns nothing. The label lives on the pod
-*template*, not on the Deployment object, so the Deployment has to be fetched by name.
+`kubectl get deploy -l app=nginx` returns nothing. The label is on the pod template, not on
+the Deployment object, so the Deployment has to be fetched by name.
 
 ### Rolling update
 
@@ -285,10 +274,10 @@ Waiting for deployment "nginx-deployment" rollout to finish: 1 old replicas are 
 deployment "nginx-deployment" successfully rolled out
 ```
 
-Trimmed — the real transcript repeats each line several times as it polls.
+This output is trimmed. The real transcript repeats each line several times as it polls.
 
-The progression is the point: new pods come up *before* old ones go away, a few at a time,
-so the app never drops to zero capacity. That is the default `RollingUpdate` strategy.
+New pods come up before the old ones go away, a few at a time, so the app never drops to
+zero capacity. That is the default `RollingUpdate` strategy.
 
 ```text
 $ kubectl get rs -l app=nginx
@@ -297,9 +286,9 @@ nginx-deployment-6946987795   0         0         0       2s
 nginx-deployment-69858744c4   3         3         3       1s
 ```
 
-Two ReplicaSets now. The old one is scaled to **0 but not deleted** — that is what makes a
-rollback instant. Kubernetes does not rebuild the previous version, it scales the old
-ReplicaSet back up.
+There are two ReplicaSets now. The old one is scaled to 0 but not deleted, which is what
+makes a rollback instant: Kubernetes scales the old ReplicaSet back up instead of
+rebuilding the previous version.
 
 ```text
 $ kubectl rollout history deployment/nginx-deployment
@@ -310,8 +299,8 @@ REVISION  CHANGE-CAUSE
 ```
 
 `CHANGE-CAUSE` is `<none>` because I used `kubectl set image` without recording an
-annotation. In a real pipeline you would set `kubernetes.io/change-cause` so the history
-says *why* each revision exists.
+annotation. Setting `kubernetes.io/change-cause` would make the history say why each
+revision exists.
 
 ### Rollback
 
@@ -324,46 +313,42 @@ $ kubectl rollout status deployment/nginx-deployment
 deployment "nginx-deployment" successfully rolled out
 ```
 
-The warning is real and worth keeping rather than hiding. `rollout undo` changes the live
-object but not the `last-applied-configuration` annotation that `kubectl apply` diffs
-against. So the cluster is back on 1.25, but my `deployment.yml` on disk and the annotation
-still describe the applied state — the next `kubectl apply` could quietly undo the
-rollback. The clean fix in practice is to revert the manifest in git and re-apply, and let
-`rollout undo` be the emergency lever.
+I left the warning in on purpose. `rollout undo` changes the live object but not the
+`last-applied-configuration` annotation that `kubectl apply` diffs against. So the cluster
+is back on 1.25, but my `deployment.yml` on disk and the annotation still describe the
+applied state, and the next `kubectl apply` could quietly undo the rollback. The cleaner
+fix is to revert the manifest in git and re-apply, and keep `rollout undo` for emergencies.
 
 ![Rolling update to nginx 1.26, two ReplicaSets, then a rollback](03-deployment/deployment_24BCS10244.png)
 
 ### What I understood
 
-A Deployment does not manage pods. It manages ReplicaSets, and *they* manage pods — three
-layers, each adding exactly one capability. The hash suffix on
+A Deployment does not manage pods directly. It manages ReplicaSets, and they manage pods,
+so there are three layers and each adds one capability. The hash suffix on
 `nginx-deployment-6946987795` is computed from the pod template, so changing the image
-produces a genuinely different ReplicaSet rather than mutating the existing one.
+produces a different ReplicaSet instead of changing the existing one.
 
-That is what makes rollback instant. The old ReplicaSet is scaled to zero and kept, so
+That is why rollback is instant: the old ReplicaSet is scaled to zero and kept, so
 `rollout undo` scales it back up instead of rebuilding anything. It also explains why
-`kubectl get rs` shows two entries after an update and why old ones accumulate until
+`kubectl get rs` shows two entries after an update, and why old ones accumulate until
 `revisionHistoryLimit` trims them.
 
-Which reframes the warning above: `rollout undo` is a live-object operation, and my manifest
-on disk never learns about it. So it belongs in the emergency toolkit — get the old version
-back in seconds — while the durable fix is reverting the manifest in git.
-
----
+Because `rollout undo` only touches the live object, my manifest on disk never learns about
+it. It is good for getting the old version back in seconds, while the lasting fix is
+reverting the manifest in git.
 
 ## Notes
 
-**Why three objects instead of one.** Each layer adds exactly one capability. A Pod runs
-containers. A ReplicaSet keeps N of them alive. A Deployment manages successive
-ReplicaSets so you can change the template without downtime. You can use the lower layers
-directly, but in practice you write Deployments and let them create the rest.
+Each layer adds one capability. A Pod runs containers, a ReplicaSet keeps N of them alive,
+and a Deployment manages successive ReplicaSets so the template can change without
+downtime. The lower layers can be used directly, but in practice Deployments are written
+and they create the rest.
 
-**A ReplicaSet does not update pods.** Changing the image in `replicaset.yml` and
-re-applying leaves the running pods untouched — the ReplicaSet only cares about the
-*count*, not whether existing pods match the current template. That is precisely the gap
-the Deployment fills.
+A ReplicaSet does not update pods. Changing the image in `replicaset.yml` and re-applying
+leaves the running pods untouched, because the ReplicaSet only cares about the count, not
+whether existing pods match the current template. The Deployment fills that gap.
 
-**Reproducing this section.**
+To reproduce this section:
 
 ```bash
 cd 01-pod        && kubectl apply -f pod.yml        && cd ..

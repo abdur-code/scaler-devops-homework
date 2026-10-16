@@ -16,14 +16,12 @@ Files (all from the lecture; two fixed in my copy, see below):
 | File | What it is |
 |---|---|
 | `deployment.yaml` | `web`: 2 nginx replicas labelled `app=web` |
-| `service.yaml` | `web-service`, ClusterIP port 80 → targetPort 80. **Fixed**: selector was `app: web-ahsgdf` |
+| `service.yaml` | `web-service`, ClusterIP port 80 → targetPort 80. Fixed: selector was `app: web-ahsgdf` |
 | `broken-service.yaml` | `broken-service` with `selector: app: does-not-exist` (intentionally broken) |
-| `dns-test-pod.yaml` | a Pod with DNS tools. **Fixed**: the image name didn't exist |
+| `dns-test-pod.yaml` | a Pod with DNS tools. Fixed: the image name didn't exist |
 
 The lecture folder also contains a `pod.yaml` that is a stray copy of the `logs-demo` Pod
 from 03. Nothing in this lesson uses it, so I didn't copy it.
-
----
 
 ## 1. Create the application
 
@@ -47,7 +45,7 @@ kubectl get service
 `web-service` got ClusterIP `10.107.165.154`. Creating a Service always succeeds, even
 when it can't route anywhere, as the next step shows.
 
-## 3–4. Check the Service and its endpoints
+## 3 and 4. Check the Service and its endpoints
 
 ### Problem found: the lecture's Service has no endpoints
 
@@ -63,16 +61,16 @@ kubectl get pods --show-labels
 The README expects two Pod IPs. Instead, `Endpoints:` is empty and
 `kubectl get endpoints` shows `<none>`.
 
-**Root cause.** `Selector: app=web-ahsgdf`, but the Pods are labelled `app=web`. The
+Root cause: `Selector: app=web-ahsgdf`, but the Pods are labelled `app=web`. The
 README itself says the Service uses `app: web`, so the YAML has stray characters in the
 selector. No Pod matches, so the Service has no backends.
 
 The yellow `Warning: v1 Endpoints is deprecated in v1.33+` is kubectl telling me that on
-Kubernetes 1.37 the real objects are **EndpointSlices**; `get endpoints` still works, so
+Kubernetes 1.37 the real objects are EndpointSlices. `get endpoints` still works, so
 I show both below.
 
-**Fix.** Set the selector in my copy of `service.yaml` back to `app: web` (with a comment)
-and re-apply. A Service's selector *can* be changed in place.
+Fix: I set the selector in my copy of `service.yaml` back to `app: web` (with a comment)
+and re-applied. A Service's selector can be changed in place.
 
 ```bash
 grep -A3 "selector" service.yaml
@@ -86,7 +84,7 @@ kubectl get pods -o wide
 ![fixed selector](screenshots/05-fix-selector_24BCS10244.png)
 
 `service/web-service configured`. Endpoints are now `10.244.0.114:80,10.244.0.115:80`,
-which are exactly the two Pod IPs from `get pods -o wide`, and the EndpointSlice
+the same two Pod IPs as in `get pods -o wide`, and the EndpointSlice
 `web-service-n4x64` lists the same addresses.
 
 ## 6. Create the DNS test Pod
@@ -102,7 +100,7 @@ kubectl get pod dns-test
 ![dns-test as written](screenshots/06-dns-test-pod_24BCS10244.png)
 
 The wait timed out after 3 minutes and the Pod sat in `ImagePullBackOff`, the same failure
-type as section 07, so I used the same approach.
+as in section 07, so I checked it the same way.
 
 ```bash
 kubectl events --for pod/dns-test --types=Warning
@@ -113,12 +111,12 @@ docker manifest inspect registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3 | gr
 ![image not found](screenshots/07-dns-test-image-not-found_24BCS10244.png)
 ![image names](screenshots/08-check-image-names_24BCS10244.png)
 
-**Root cause.** `registry.k8s.io/e2e-test-images/dnsutils:1.3` → `not found` / `no such
+Root cause: `registry.k8s.io/e2e-test-images/dnsutils:1.3` → `not found` / `no such
 manifest`. The Kubernetes test image with `nslookup` and `dig` is named
-**`jessie-dnsutils`** (the one the official "Debugging DNS Resolution" page uses), and tag
+`jessie-dnsutils` (the one the official "Debugging DNS Resolution" page uses), and tag
 `1.3` exists for arm64, which my Apple Silicon minikube needs.
 
-**Fix.** Changed the image in my copy of `dns-test-pod.yaml` (commented) and recreated
+Fix: I changed the image in my copy of `dns-test-pod.yaml` (commented) and recreated
 the Pod:
 
 ```bash
@@ -143,10 +141,10 @@ kubectl exec -it dns-test -- nslookup web-service.troubleshooting-lab.svc.cluste
 - The short name `web-service` resolves to `10.107.165.154`, the ClusterIP. The answer
   is `web-service.troubleshooting-lab.svc.cluster.local` because the Pod's own namespace
   is in its DNS search list.
-- The lecture's FQDN `web-service.default.svc.cluster.local` gives **NXDOMAIN**. It isn't
+- The lecture's FQDN `web-service.default.svc.cluster.local` gives NXDOMAIN. Nothing is
   broken: I ran this session in namespace `troubleshooting-lab`, not `default`, and there's
-  no `web-service` in `default`. A small DNS issue of its own: the namespace part of the
-  FQDN has to be the Service's namespace.
+  no `web-service` in `default`. The namespace part of the FQDN has to be the Service's
+  namespace.
 - With the right namespace (`...troubleshooting-lab.svc.cluster.local`) it resolves.
 
 ## 8. Test the HTTP connection
@@ -163,7 +161,7 @@ kubectl exec dns-test -- sh -c 'for t in wget curl nc dig nslookup; do printf "%
 `exec: "wget": executable file not found in $PATH`. The image only has `dig` and
 `nslookup`, no `wget`, `curl` or `nc`.
 
-**Fix.** Use a throwaway busybox Pod for the HTTP test (busybox has `wget`). `--rm`
+Fix: I used a throwaway busybox Pod for the HTTP test (busybox has `wget`). `--rm`
 deletes it when the command finishes. I noted this in the comment in `dns-test-pod.yaml`.
 
 ```bash
@@ -201,12 +199,12 @@ kubectl run http-test --rm -i --restart=Never --image=busybox:1.36 -- sh -c 'sle
 
 This is the case the lecture warns about. `nslookup broken-service` resolves
 fine (`10.108.60.201`), yet HTTP fails with
-`can't connect to remote host (10.108.60.201): Connection refused`. DNS isn't the problem:
-the name exists as soon as the Service object exists, endpoints or not. kube-proxy
-rejects connections to a ClusterIP that has no endpoints, which is why it's an immediate
-"refused" and not a timeout.
+`can't connect to remote host (10.108.60.201): Connection refused`. DNS isn't the problem,
+since the name exists as soon as the Service object exists, endpoints or not. kube-proxy
+rejects connections to a ClusterIP that has no endpoints, so the failure is an immediate
+"refused" instead of a timeout.
 
-## 10–11. Remove the broken Service
+## 10 and 11. Remove the broken Service
 
 ```bash
 kubectl delete service broken-service
@@ -228,7 +226,7 @@ kubectl describe service web-service | grep Selector
 Both web Pods carry `app=web` and the selector is `app=web`. `dns-test` has no labels,
 so it's correctly not an endpoint.
 
-## 14–16. Check CoreDNS
+## 14 to 16. Check CoreDNS
 
 These are read-only looks at `kube-system`.
 
@@ -258,8 +256,8 @@ from `10.244.0.135` (dns-test). The first two lines are `NXDOMAIN` for
 `web-service.troubleshooting-lab.svc.cluster.local.svc.cluster.local` and
 `...cluster.local.cluster.local`. That's `ndots:5` at work: a name with fewer than 5 dots
 is tried with each search domain appended before being tried as-is, so a "failed" query in
-the logs isn't necessarily a problem. `-l` with logs shows only the last 10 lines per
-Pod by default, which is why older queries aren't there.
+the logs isn't necessarily a problem. Logs with `-l` show only the last 10 lines per
+Pod by default, so older queries aren't there.
 
 ## Cleanup
 
@@ -270,8 +268,6 @@ kubectl get all
 
 ![cleanup](screenshots/19-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
 - A Service is only as good as its endpoints. An empty `Endpoints:` line almost always means
@@ -280,6 +276,6 @@ kubectl get all
   object exists; `wget`/`curl` proves traffic reaches a Pod.
 - The DNS name includes the namespace: `<svc>.<ns>.svc.cluster.local`. The short name
   only works from the same namespace because of the search list in `/etc/resolv.conf`.
-- A good debug toolkit needs the right tools in it. The lecture's test image name was
-  wrong, and the fixed one had no HTTP client, so a `kubectl run --rm` busybox Pod was the
+- The debug Pod needs the right tools in it. The lecture's test image name was wrong,
+  and the fixed one had no HTTP client, so a `kubectl run --rm` busybox Pod was the
   quickest way to test HTTP.

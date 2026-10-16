@@ -219,8 +219,8 @@ jobs:
   # ---------------------------------------------------------------- 10. Deploy
   # A GitHub-hosted runner cannot reach minikube on a laptop (see the lecture's
   # 03-kubernetes-deployment notes), so this job deploys to a throwaway kind cluster
-  # inside the runner, pulling the image from GHCR like a real cluster would. For a
-  # real cluster, replace the kind step with a kubeconfig from a KUBE_CONFIG secret.
+  # inside the runner, pulling the image from GHCR like a real cluster would. A real
+  # cluster would use a kubeconfig from a KUBE_CONFIG secret instead of the kind step.
   deploy:
     name: 10. Deploy to Kubernetes
     needs: push

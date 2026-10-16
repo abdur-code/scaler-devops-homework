@@ -18,7 +18,7 @@ spec:
     path: session20-monitoring-observability-gitops/08-mini-project/app
     directory:
       # that folder also holds argocd-application.yaml; Step 3 says the Application
-      # must not be rendered from the path it watches, so leave it out
+      # must not be rendered from the path it watches, so it is excluded
       exclude: argocd-application.yaml
 
   destination:

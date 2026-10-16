@@ -1,4 +1,4 @@
-# Helm Charts: `helm create`, `helm template`, install, uninstall
+# Helm charts: `helm create`, `helm template`, install, uninstall
 
 **Name:** Abdur Rahman Ibne Munir
 **Enrollment number:** 24BCS10244
@@ -41,8 +41,8 @@ helm template my-release demo-chart | grep -E "^# Source|^kind:"
 The full render is 100 lines and didn't fit one screenshot, so the first image shows the
 first 70 lines through `head`. The second lists every object the chart produces, with the
 template it came from: a ServiceAccount, a Service, a Deployment, and the test Pod.
-Nothing is sent to the cluster; `helm template` only prints YAML, which is why it's useful
-for checking a chart before installing it.
+Nothing is sent to the cluster. `helm template` only prints YAML, so it can be used to
+check a chart before installing it.
 
 ## 3. Install (`helm install`) and list (`helm list`)
 
@@ -79,7 +79,7 @@ curl -s http://127.0.0.1:18151 | grep "<title>"
 ![port-forward](screenshots/06-port-forward_24BCS10244.png)
 ![curl](screenshots/07-curl_24BCS10244.png)
 
-`Server: nginx/1.16.0`: the version that came from `appVersion`.
+The response shows `Server: nginx/1.16.0`, which is the version that came from `appVersion`.
 
 ## 4. Uninstall (`helm uninstall`)
 
@@ -91,19 +91,19 @@ kubectl get all
 
 ![uninstall](screenshots/08-uninstall_24BCS10244.png)
 
-Release gone, and every object it created is gone with it.
+The release is gone and every object it created went with it.
 
 The lecture folder also contains a second generated chart, `myapp/`, that the notes never
 use, so I didn't copy it.
 
 ## What I understood
 
-- `helm create` gives a complete, production-shaped chart: helpers for names and labels,
-  optional Ingress/HPA/HTTPRoute behind `enabled` flags, probes, and a test hook. It's a
-  good starting point to cut down from.
-- `helm template` is a dry render on my machine. It's the fastest way to see what a value
+- `helm create` gives a complete chart: helpers for names and labels, optional
+  Ingress/HPA/HTTPRoute behind `enabled` flags, probes, and a test hook. It is a good
+  starting point to cut down.
+- `helm template` is a dry render on my machine. It is the fastest way to see what a value
   change will do before anything reaches the cluster.
-- Object names, labels and the image tag all come from the chart plus the release name.
-  That's how one chart can be installed many times without name collisions.
+- Object names, labels and the image tag all come from the chart plus the release name, so
+  one chart can be installed many times without name collisions.
 - `NOTES.txt` is also a template, so the instructions it prints already contain the real
   namespace and release name.

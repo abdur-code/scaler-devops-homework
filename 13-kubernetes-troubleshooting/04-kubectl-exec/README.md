@@ -8,8 +8,6 @@ check things from the application's side of the network.
 
 Files: `pod.yaml`, an `nginx:1.27` Pod called `exec-demo`.
 
----
-
 ## 1. Create the Pod
 
 ```bash
@@ -40,7 +38,7 @@ available" case applies here.
 ## 3. Inspect the nginx configuration
 
 `nginx -T` prints the whole configuration (184 lines here), which doesn't fit in one
-screenshot, so I counted the lines and filtered the important ones:
+screenshot, so I counted the lines and filtered for the ones I wanted:
 
 ```bash
 kubectl exec -it exec-demo -- bash
@@ -68,8 +66,8 @@ kubectl exec exec-demo -- cat /etc/hosts
 ![one-off](screenshots/04-exec-one-off_24BCS10244.png)
 
 The hostname is the Pod name. `/etc/hosts` is "Kubernetes-managed" and maps the Pod's own
-IP (`10.244.0.79`) to `exec-demo`. Without `-it` the output is plain, which is easier to
-use in scripts.
+IP (`10.244.0.79`) to `exec-demo`. Without `-it` the output is plain, which suits
+scripts better.
 
 ## 5. Cleanup
 
@@ -79,14 +77,12 @@ kubectl delete -f pod.yaml
 
 ![cleanup](screenshots/05-cleanup_24BCS10244.png)
 
----
-
 ## What I understood
 
 - `exec` checks the app from inside. If `curl localhost` works in the container but the
-  Service doesn't, the problem is in the Service, DNS or ports, not the app.
+  Service doesn't, the problem is in the Service, DNS or ports, and the app is fine.
 - `-it` gives an interactive shell; without it, exec runs one command and returns.
 - It only works on a running container. A crash-looping container gives me nothing to
   exec into, so then I rely on `logs --previous`, `describe` or `kubectl debug`.
 - Minimal images may lack `bash`, `curl` or `wget` (I hit this with the DNS test image
-  in 09), so sometimes the fix is a separate debug Pod.
+  in 09), so sometimes a separate debug Pod is needed.
